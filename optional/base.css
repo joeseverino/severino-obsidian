@@ -1,0 +1,96 @@
+/* base.css — design-token seed, derived from jseverino.com/src/styles/base.css.
+ *
+ * OPTIONAL. Drop this into a frontend project to start from the same tokens
+ * (color, type scale, spacing, motion, radii) instead of reinventing them.
+ * Delete this file in non-frontend repos. The canonical, fuller stylesheet
+ * lives in the jseverino.com repo — keep this as a starting point, not a fork.
+ */
+
+@layer tokens, base, components;
+
+@layer tokens {
+  :root {
+    /* color */
+    --color-bg: #ffffff;
+    --color-text: #0b0620;
+    --color-text-alt: #4c63a0;
+    --color-soft: #eff3fb;
+    --color-muted: #6e6b7c;
+    --color-border: color-mix(in oklch, var(--color-text) 8%, transparent);
+    --color-code-bg: #f8fafc;
+    --color-code-text: #0f172a;
+    --color-success: #166534;
+    --color-error: #991b1b;
+
+    /* elevation */
+    --shadow-sm: 0 6px 10px rgb(0 0 0 / 18%);
+    --shadow-md: 0 10px 16px rgb(0 0 0 / 22%);
+
+    /* radii */
+    --radius-sm: 10px;
+    --radius-md: 12px;
+    --radius-pill: 999px;
+
+    /* motion */
+    --motion-duration-fast: 150ms;
+    --motion-duration-standard: 200ms;
+    --motion-ease-standard: ease;
+
+    /* layout */
+    --content: 42rem;
+    --wide: 80rem;
+    --gutter: clamp(1.5rem, 6vw, 2rem);
+    --w-constrained: min(var(--content), calc(100% - (var(--gutter) * 2)));
+    --w-wide: min(var(--wide), calc(100% - (var(--gutter) * 2)));
+
+    /* spacing */
+    --space-20: 1rem;
+    --space-30: clamp(1.5rem, 6vw, 2rem);
+    --space-40: clamp(2rem, 8vw, 3rem);
+    --space-50: clamp(2.5rem, 8vw, 4rem);
+
+    /* type */
+    --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    --font-sm: 1rem;
+    --font-base: clamp(0.875rem, 0.875rem + ((1vw - 0.2rem) * 0.417), 1.125rem);
+    --font-md: 1.25rem;
+    --font-lg: clamp(1.25rem, 1.25rem + ((1vw - 0.2rem) * 0.833), 1.75rem);
+    --font-xl: clamp(1.39rem, 1.39rem + ((1vw - 0.2rem) * 1.433), 2.25rem);
+    --font-xxl: clamp(1.5rem, 1.5rem + ((1vw - 0.2rem) * 2.5), 3rem);
+  }
+}
+
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    margin: 0;
+    background: var(--color-bg);
+    color: var(--color-text);
+    font-family: system-ui, sans-serif;
+    font-size: var(--font-base);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  a {
+    color: inherit;
+    text-decoration: none;
+    text-underline-offset: 0.25ch;
+    transition: color var(--motion-duration-fast) var(--motion-ease-standard);
+  }
+
+  a:hover,
+  a:focus {
+    text-decoration: underline;
+  }
+}

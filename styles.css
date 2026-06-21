@@ -1,0 +1,65 @@
+/* Plugin chrome only. The preview's *content* styling comes from the site's
+ * base.css injected into the iframe — not from here. */
+
+.svo-preview {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+}
+
+/* flex: 1 fills the pane; min-height: 0 is the key bit — without it a flex child
+ * won't shrink below content size, which breaks the iframe's own scrolling. In
+ * normal flow (not absolute) the iframe relayouts on resize natively, so no
+ * reload/scroll-reset hack is needed. */
+.svo-preview-frame {
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+  border: none;
+  background: #fff;
+}
+
+.svo-preview-placeholder {
+  padding: 1.25rem;
+  color: var(--text-muted);
+  font-size: var(--font-ui-small);
+  line-height: 1.5;
+}
+
+/* Result modal (publish gate, tag report, graphics status). */
+.svo-result h4 {
+  margin: 0.9em 0 0.2em;
+  font-size: var(--font-ui-small);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.svo-result ul {
+  margin: 0;
+  padding-left: 1.2em;
+}
+.svo-ok {
+  color: var(--color-green, #166534);
+}
+.svo-warn {
+  color: var(--text-warning, #b7791f);
+}
+.svo-error {
+  color: var(--text-error, #c0392b);
+}
+.svo-muted {
+  color: var(--text-muted);
+}
+
+/* Publish-gate badge in the status bar. */
+.svo-gate {
+  font-variant-numeric: tabular-nums;
+}
+
+.svo-gate-draft {
+  color: var(--text-muted);
+}
+
+.svo-gate-published {
+  color: var(--color-green, #166534);
+}

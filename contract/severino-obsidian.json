@@ -1,0 +1,60 @@
+{
+  "ok": true,
+  "schema_version": 4,
+  "name": "severino-obsidian",
+  "description": "Obsidian plugin suite for the vault: site-accurate writeup preview + authoring power-ups.",
+  "group": "Integrations",
+  "order": 160,
+  "effect": "read",
+  "global_options": [],
+  "positionals": [],
+  "paras": [],
+  "examples": [],
+  "commands": [
+    {
+      "name": "build",
+      "summary": "",
+      "args": [],
+      "effect": "local_write",
+      "paras": [],
+      "examples": [],
+      "delegates": "node esbuild.config.mjs"
+    },
+    {
+      "name": "dev",
+      "summary": "",
+      "args": [],
+      "effect": "local_write",
+      "paras": [],
+      "examples": [],
+      "delegates": "node esbuild.config.mjs --watch"
+    },
+    {
+      "name": "typecheck",
+      "summary": "",
+      "args": [],
+      "effect": "read",
+      "paras": [],
+      "examples": [],
+      "delegates": "tsc --noEmit"
+    },
+    {
+      "name": "commands:emit",
+      "summary": "",
+      "args": [],
+      "effect": "local_write",
+      "paras": [],
+      "examples": [],
+      "delegates": "node bin/emit-obsidian-commands.mjs"
+    },
+    {
+      "name": "commands:check",
+      "summary": "",
+      "args": [],
+      "effect": "read",
+      "paras": [],
+      "examples": [],
+      "delegates": "node bin/emit-obsidian-commands.mjs --check"
+    }
+  ]
+}

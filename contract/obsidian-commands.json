@@ -1,0 +1,117 @@
+{
+  "ok": true,
+  "schema_version": 4,
+  "name": "severino-obsidian-commands",
+  "description": "Severino Labs Obsidian plugin — in-editor command surface.",
+  "group": "Integrations",
+  "order": 161,
+  "effect": "read",
+  "global_options": [],
+  "positionals": [],
+  "paras": [
+    "Runtime commands invoked from Obsidian’s command palette; each carries a cordon effect (read < local_write < vault_write < remote_write < deploy) so the fleet sees its blast radius. Rendered from src/commands.mjs — the same array that registers the live commands."
+  ],
+  "examples": [],
+  "commands": [
+    {
+      "name": "open-site-preview",
+      "summary": "Site preview: open pane — Open the site-accurate writeup preview pane.",
+      "args": [],
+      "effect": "read",
+      "paras": [],
+      "examples": []
+    },
+    {
+      "name": "publish-gate",
+      "summary": "Publish gate: check this writeup — Run the MCP validate-writeup gate (draft mode).",
+      "args": [],
+      "effect": "read",
+      "paras": [],
+      "examples": [],
+      "delegates": "severino-vault-mcp validate-writeup --draft"
+    },
+    {
+      "name": "asset-doctor",
+      "summary": "Asset doctor: check images for orphans + missing — Report orphaned and missing writeup images.",
+      "args": [],
+      "effect": "read",
+      "paras": [],
+      "examples": []
+    },
+    {
+      "name": "insert-figure",
+      "summary": "Insert figure block — Insert a ::figure DSL skeleton at the cursor.",
+      "args": [],
+      "effect": "local_write",
+      "paras": [],
+      "examples": []
+    },
+    {
+      "name": "insert-table",
+      "summary": "Insert table block — Insert a ::table DSL skeleton at the cursor.",
+      "args": [],
+      "effect": "local_write",
+      "paras": [],
+      "examples": []
+    },
+    {
+      "name": "insert-terminal",
+      "summary": "Insert terminal block — Insert a ::terminal DSL skeleton at the cursor.",
+      "args": [],
+      "effect": "local_write",
+      "paras": [],
+      "examples": []
+    },
+    {
+      "name": "graphics-status",
+      "summary": "Graphics: status (unrendered sources) — List graphics sources vs rendered images.",
+      "args": [],
+      "effect": "read",
+      "paras": [],
+      "examples": []
+    },
+    {
+      "name": "graphics-render",
+      "summary": "Graphics: render unrendered into images/ — Render graphics via brand/diagram into images/.",
+      "args": [],
+      "effect": "local_write",
+      "paras": [],
+      "examples": [],
+      "delegates": "brand figure / diagram"
+    },
+    {
+      "name": "sync-to-site",
+      "summary": "Sync writeups to the site repo — Run `site sync` (vault → site repo).",
+      "args": [],
+      "effect": "vault_write",
+      "paras": [],
+      "examples": [],
+      "delegates": "site sync"
+    },
+    {
+      "name": "schema-check",
+      "summary": "Schema: check this doc’s frontmatter — Lint frontmatter against the MCP schema.",
+      "args": [],
+      "effect": "read",
+      "paras": [],
+      "examples": [],
+      "delegates": "severino-vault-mcp schema"
+    },
+    {
+      "name": "open-on-site",
+      "summary": "Open writeup on jseverino.com — Open the live writeup URL in the browser.",
+      "args": [],
+      "effect": "read",
+      "paras": [],
+      "examples": []
+    },
+    {
+      "name": "copy-slug",
+      "summary": "Copy writeup slug — Copy the active writeup slug to the clipboard.",
+      "args": [],
+      "effect": "read",
+      "paras": [],
+      "examples": []
+    }
+  ]
+}

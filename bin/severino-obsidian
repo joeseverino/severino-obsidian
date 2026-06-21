@@ -1,0 +1,33 @@
+#!/usr/bin/env node
+// severino-obsidian — Cordon emitter. EMIT ONCE: the command surface is DERIVED
+// from package.json `scripts`, not declared here. The only hand-typed fact is
+// each exposed script's blast radius (`effects`).
+//
+//   bin/severino-obsidian --describe    print the cordon-v4 contract
+//   bin/severino-obsidian --write       (re)write contract/severino-obsidian.json
+//   bin/severino-obsidian --check       exit 1 if the committed contract is stale
+
+import { readFile } from 'node:fs/promises';
+
+const CORDON = process.env.CORDON_HOME ?? `${process.env.HOME}/Documents/Code/Assets/cordon`;
+const { describeScripts, emitMain } = await import(`${CORDON}/emitters/node/index.mjs`);
+const pkg = JSON.parse(await readFile(new URL('../package.json', import.meta.url)));
+
+emitMain(
+  describeScripts(pkg, {
+    name: 'severino-obsidian',
+    description: 'Obsidian plugin suite for the vault: site-accurate writeup preview + authoring power-ups.',
+    group: 'Integrations',
+    order: 160,
+    // Blast radius: build + dev bundle main.js into the vault's plugin dir
+    // (a local write). describe/describe:write are emitter plumbing, kept out.
+    effects: {
+      build: 'local_write',
+      dev: 'local_write',
+      typecheck: 'read',
+      'commands:emit': 'local_write',
+      'commands:check': 'read',
+    },
+  }),
+  { url: import.meta.url }, // roots the contract at ../contract/severino-obsidian.json
+);
