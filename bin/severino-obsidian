@@ -13,21 +13,33 @@ const CORDON = process.env.CORDON_HOME ?? `${process.env.HOME}/Documents/Code/As
 const { describeScripts, emitMain } = await import(`${CORDON}/emitters/node/index.mjs`);
 const pkg = JSON.parse(await readFile(new URL('../package.json', import.meta.url)));
 
-emitMain(
-  describeScripts(pkg, {
-    name: 'severino-obsidian',
-    description: 'Obsidian plugin suite for the vault: site-accurate writeup preview + authoring power-ups.',
-    group: 'Integrations',
-    order: 160,
-    // Blast radius: build + dev bundle main.js into the vault's plugin dir
-    // (a local write). describe/describe:write are emitter plumbing, kept out.
-    effects: {
-      build: 'local_write',
-      dev: 'local_write',
-      typecheck: 'read',
-      'commands:emit': 'local_write',
-      'commands:check': 'read',
-    },
-  }),
-  { url: import.meta.url }, // roots the contract at ../contract/severino-obsidian.json
-);
+const spec = describeScripts(pkg, {
+  name: 'severino-obsidian',
+  description: 'Obsidian plugin suite for the vault: site-accurate writeup preview + authoring power-ups.',
+  group: 'Integrations',
+  order: 160,
+  // Blast radius: build + dev bundle main.js into the vault's plugin dir
+  // (a local write). describe/describe:write are emitter plumbing, kept out.
+  effects: {
+    build: 'local_write',
+    dev: 'local_write',
+    typecheck: 'read',
+    'commands:emit': 'local_write',
+    'commands:check': 'read',
+  },
+});
+
+// npm scripts carry no help text, so the emitter leaves summaries blank; add a
+// one-liner per command so the contract (and the generated README) read well.
+const summaries = {
+  build: 'Bundle the plugin into the vault (site renderer + base.css inlined).',
+  dev: 'Watch-rebuild into the vault on change.',
+  typecheck: 'Type-check the source with tsc --noEmit.',
+  'commands:emit': 'Render the cordon-v4 command contract from src/commands.mjs.',
+  'commands:check': 'Fail if the committed command contract is stale.',
+};
+for (const command of spec.commands) {
+  if (summaries[command.name]) command.summary = summaries[command.name];
+}
+
+emitMain(spec, { url: import.meta.url }); // roots the contract at ../contract/severino-obsidian.json

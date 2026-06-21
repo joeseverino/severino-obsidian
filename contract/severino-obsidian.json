@@ -13,7 +13,7 @@
   "commands": [
     {
       "name": "build",
-      "summary": "",
+      "summary": "Bundle the plugin into the vault (site renderer + base.css inlined).",
       "args": [],
       "effect": "local_write",
       "paras": [],
@@ -22,7 +22,7 @@
     },
     {
       "name": "dev",
-      "summary": "",
+      "summary": "Watch-rebuild into the vault on change.",
       "args": [],
       "effect": "local_write",
       "paras": [],
@@ -31,7 +31,7 @@
     },
     {
       "name": "typecheck",
-      "summary": "",
+      "summary": "Type-check the source with tsc --noEmit.",
       "args": [],
       "effect": "read",
       "paras": [],
@@ -40,7 +40,7 @@
     },
     {
       "name": "commands:emit",
-      "summary": "",
+      "summary": "Render the cordon-v4 command contract from src/commands.mjs.",
       "args": [],
       "effect": "local_write",
       "paras": [],
@@ -49,7 +49,7 @@
     },
     {
       "name": "commands:check",
-      "summary": "",
+      "summary": "Fail if the committed command contract is stale.",
       "args": [],
       "effect": "read",
       "paras": [],

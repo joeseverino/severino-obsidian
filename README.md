@@ -89,11 +89,11 @@ Obsidian plugin suite for the vault: site-accurate writeup preview + authoring p
 
 | command | effect | summary |
 |---|---|---|
-| `build` | `local_write` |  |
-| `dev` | `local_write` |  |
-| `typecheck` | `read` |  |
-| `commands:emit` | `local_write` |  |
-| `commands:check` | `read` |  |
+| `build` | `local_write` | Bundle the plugin into the vault (site renderer + base.css inlined). |
+| `dev` | `local_write` | Watch-rebuild into the vault on change. |
+| `typecheck` | `read` | Type-check the source with tsc --noEmit. |
+| `commands:emit` | `local_write` | Render the cordon-v4 command contract from src/commands.mjs. |
+| `commands:check` | `read` | Fail if the committed command contract is stale. |
 
 ---
 
