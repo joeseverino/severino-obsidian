@@ -8,6 +8,13 @@ Two axes, kept distinct:
   (currently `4`, schema `cordon-v4.json`). Tracked separately because a project
   can stay on the starter while the contract revs.
 
+## 1.0.0 (2026-06-21)
+
+
+### Features
+
+* severino-obsidian — site-accurate writeup preview + cohesion power-ups ([15d1d69](https://github.com/joeseverino/severino-obsidian/commit/15d1d69cb5ce222f00039c95ab9bfd6673f1f16b))
+
 ## 1.0.0 (2026-06-16)
 
 
