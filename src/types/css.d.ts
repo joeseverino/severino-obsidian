@@ -1,5 +1,12 @@
 // Site assets imported by esbuild aliases + loaders (see esbuild.config.mjs).
-// We consume the real owners' files; we don't fork them.
+// We consume the real owners' files; we don't fork them. These ambient
+// declarations type-check whether or not the sibling jseverino.com checkout is
+// present, so CI (which checks out only this repo) type-checks the same as local.
+
+// The site's markdown → HTML writeup renderer (src/lib/markdown.ts).
+declare module '@site/markdown' {
+  export function renderWriteupHtml(markdown: string, slug: string): string;
+}
 
 // base.css as a text string (text loader), injected into the preview iframe.
 declare module '@site/base-css' {

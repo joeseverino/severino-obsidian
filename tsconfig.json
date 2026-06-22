@@ -10,10 +10,7 @@
     "skipLibCheck": true,
     "isolatedModules": true,
     "noEmit": true,
-    "allowJs": false,
-    "paths": {
-      "@site/markdown": ["../jseverino.com/src/lib/markdown.ts"]
-    }
+    "allowJs": false
   },
   "include": ["src"]
 }
