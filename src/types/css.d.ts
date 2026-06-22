@@ -17,3 +17,19 @@ declare module '@site/inter-font' {
 declare module '@site/brand' {
   export const BRAND: { navy: string; navyDeep: string; [key: string]: unknown };
 }
+
+// The site's "load BOTH" bundle: base.css + brand vars + Inter @font-face as one
+// <style> blob, so the preview can't forget the brand vars (src/lib/web-styles.mjs).
+declare module '@site/web-styles' {
+  export function previewStyles(opts: { baseCss: string; fontUrl: string }): string;
+}
+
+// The site's YAML parser helper. Astro strips frontmatter before rendering;
+// the plugin passes raw vault files through this same helper instead of
+// maintaining a regex splitter.
+declare module '@site/frontmatter' {
+  export function parseFrontmatter(markdown: string): {
+    content: string;
+    data: Record<string, unknown>;
+  };
+}

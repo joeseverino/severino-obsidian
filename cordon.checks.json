@@ -1,0 +1,33 @@
+{
+  "$schema": "../../Assets/cordon/checks/config.schema.json",
+  "commands": [
+    {
+      "id": "typecheck",
+      "name": "Type check",
+      "effect": "read",
+      "requires": ["node"],
+      "exec": { "cmd": "npm", "args": ["run", "typecheck"] },
+      "fix": "Run `npm run typecheck` and fix the TypeScript errors."
+    },
+    {
+      "id": "commands-check",
+      "name": "Obsidian command contract drift",
+      "effect": "read",
+      "requires": ["node"],
+      "exec": { "cmd": "npm", "args": ["run", "commands:check"] },
+      "fix": "Run `npm run commands:emit` and commit the updated contract/obsidian-commands.json."
+    },
+    {
+      "id": "version-check",
+      "name": "Plugin version drift",
+      "effect": "read",
+      "requires": ["node"],
+      "exec": { "cmd": "npm", "args": ["run", "version:check"] },
+      "fix": "Run `npm run version:sync` and commit manifest.json + versions.json (package.json is the canonical version)."
+    }
+  ],
+  "idempotence": {
+    "command": "npm run commands:emit",
+    "timeoutMs": 60000
+  }
+}

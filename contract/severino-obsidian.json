@@ -18,7 +18,7 @@
       "effect": "local_write",
       "paras": [],
       "examples": [],
-      "delegates": "node esbuild.config.mjs"
+      "delegates": "npm run version:sync && node esbuild.config.mjs"
     },
     {
       "name": "dev",
