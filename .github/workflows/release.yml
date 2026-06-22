@@ -1,8 +1,12 @@
 # The release surface of this repo — the sibling of ci.yml. Release-please logic
 # (version bump, CHANGELOG, tag, GitHub Release) lives once in cordon's reusable
-# cordon-release.yml; this repo cuts versions by calling it. release-type
-# defaults to "simple" (the tracked version.txt), so a scaffolded repo is
-# release-ready with no extra config. A typed repo overrides it (see below).
+# cordon-release.yml; this repo cuts versions by calling it.
+#
+# release-type is "node": package.json is the canonical version release-please
+# bumps. manifest.json + versions.json (what Obsidian reads at runtime) are
+# DERIVED from it by `npm run version:sync` and guarded by the `version-check`
+# gate, so the release PR stays red until the synced manifest is committed onto
+# it — a mismatched manifest can never ship. See scripts/sync-version.mjs.
 #
 # ONE-TIME per-repo setting (required): Settings → Actions → General → Workflow
 # permissions → "Allow GitHub Actions to create and approve pull requests".
@@ -23,5 +27,5 @@ jobs:
       contents: write
       pull-requests: write
     uses: joeseverino/cordon/.github/workflows/cordon-release.yml@main
-    # Typed repo? Override the default "simple" (version.txt):
-    # with: { release-type: node }   # or python, go, …
+    with:
+      release-type: node   # package.json is the version source; see header

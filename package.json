@@ -1,12 +1,16 @@
 {
   "name": "severino-obsidian",
+  "version": "0.1.0",
   "private": true,
   "type": "module",
   "description": "Obsidian plugin suite for the Severino Labs vault: site-accurate writeup preview plus authoring power-ups, built on the site's own renderer.",
   "scripts": {
-    "build": "node esbuild.config.mjs",
+    "build": "npm run version:sync && node esbuild.config.mjs",
     "dev": "node esbuild.config.mjs --watch",
     "typecheck": "tsc --noEmit",
+    "version:sync": "node scripts/sync-version.mjs",
+    "version:check": "node scripts/sync-version.mjs --check",
+    "preview:render": "node scripts/preview-render.mjs",
     "commands:emit": "node bin/emit-obsidian-commands.mjs",
     "commands:check": "node bin/emit-obsidian-commands.mjs --check",
     "describe": "node bin/severino-obsidian --describe",

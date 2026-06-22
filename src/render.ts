@@ -1,12 +1,13 @@
 // The renderer glue. The plugin owns NONE of the markdown→HTML logic or the
 // styling: it calls the site's own renderWriteupHtml, injects the site's own
-// base.css + brand custom properties (the same two globals the site loads:
-// base.css and /brand.css), and reproduces the article page STRUCTURE that
+// styles via previewStyles (base.css + brand vars + font — the "load BOTH"
+// contract owned by the site), and reproduces the article page STRUCTURE that
 // portfolio/[slug]/index.astro emits so those styles actually apply. All inputs
 // come from the real owners via esbuild aliases (see esbuild.config.mjs).
 //
 import { renderWriteupHtml } from '@site/markdown';
-import { BRAND } from '@site/brand';
+import { parseFrontmatter } from '@site/frontmatter';
+import { previewStyles } from '@site/web-styles';
 import siteBaseCss from '@site/base-css';
 import interFontUrl from '@site/inter-font';
 
@@ -27,11 +28,6 @@ const escapeHtml = (s: string): string =>
 const escapeAttr = (s: string): string => escapeHtml(s).replace(/"/g, '&quot;');
 
 const escapeRegExp = (s: string): string => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-
-// Astro's content layer strips YAML frontmatter before the body reaches
-// renderWriteupHtml; the plugin reads the raw file, so strip it here.
-const stripFrontmatter = (md: string): string =>
-  md.replace(/^﻿?\s*---\r?\n[\s\S]*?\r?\n---[ \t]*\r?\n?/, '');
 
 // "2026-06-17" → "JUNE 17, 2026" (matches the article-date styling).
 function formatDate(raw?: string): string {
@@ -64,7 +60,7 @@ export function buildPreviewDoc(input: RenderInput): string {
 
   let body: string;
   try {
-    body = renderWriteupHtml(stripFrontmatter(markdown), slug);
+    body = renderWriteupHtml(parseFrontmatter(markdown).content, slug);
   } catch (err) {
     body = `<pre class="svo-error">Preview failed to render:\n${escapeHtml(String(err))}</pre>`;
   }
@@ -86,12 +82,11 @@ export function buildPreviewDoc(input: RenderInput): string {
     : '';
 
   const head = [
-    // The site's TWO globals: brand custom properties (/brand.css) + base.css.
-    `<style>:root{--color-primary:${BRAND.navy};--color-primary-deep:${BRAND.navyDeep}}</style>`,
-    `<style>${siteBaseCss}</style>`,
-    // base.css loads Inter from an absolute URL that can't resolve in the iframe;
-    // re-declare it from the inlined woff2 so the page uses the real font.
-    `<style>@font-face{font-family:Inter;font-weight:100 900;font-style:normal;font-display:swap;src:url(${interFontUrl}) format('woff2')}</style>`,
+    // The site's "load BOTH" bundle: base.css + brand vars + a resolvable Inter
+    // @font-face (base.css's font URL is absolute and can't resolve in the iframe,
+    // so we hand previewStyles the inlined woff2). One call, owned by the site, so
+    // the brand vars can never be forgotten here.
+    previewStyles({ baseCss: siteBaseCss, fontUrl: interFontUrl }),
     '<style>',
     '  html { color-scheme: light; }',
     '  body { margin: 0; background: var(--color-bg, #fff); }',

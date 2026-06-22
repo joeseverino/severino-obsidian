@@ -1,42 +1,18 @@
 // Bundle the plugin into the vault's plugin dir. The two things that make this
 // plugin "own almost nothing" are the aliases below: the markdown→HTML renderer
 // and the writeup CSS are imported straight from their real owners (the site and
-// the brand-token-synced base.css), never reimplemented here.
-//
-// Overridable, mirroring brand/sync.mjs:
-//   SITE_DIR   the jseverino.com checkout      (default ~/Documents/Code/Projects/jseverino.com)
-//   VAULT_DIR  the Obsidian vault              (default ~/Documents/Code/Severino Labs)
+// the brand-token-synced base.css), never reimplemented here. The site/vault
+// resolution + alias map live in scripts/site-paths.mjs (shared with the
+// preview-render harness), so they're authored once.
 import esbuild from 'esbuild';
 import path from 'node:path';
-import os from 'node:os';
 import fs from 'node:fs';
 import process from 'node:process';
+import { repoRoot, vaultDir, sitePaths, siteLoader, assertSitePaths } from './scripts/site-paths.mjs';
 
 const watch = process.argv.includes('--watch');
-const repoRoot = path.dirname(new URL(import.meta.url).pathname);
 
-const siteDir = process.env.SITE_DIR
-  ? path.resolve(process.env.SITE_DIR)
-  : path.resolve(os.homedir(), 'Documents/Code/Projects/jseverino.com');
-const vaultDir = process.env.VAULT_DIR
-  ? path.resolve(process.env.VAULT_DIR)
-  : path.resolve(os.homedir(), 'Documents/Code/Severino Labs');
-
-const siteRenderer = path.join(siteDir, 'src/lib/markdown.ts');
-const siteBaseCss = path.join(siteDir, 'src/styles/base.css');
-const siteBrand = path.join(siteDir, 'src/lib/brand.mjs');
-const interFont = path.join(siteDir, 'public/assets/fonts/inter/inter-variable-latin.woff2');
-for (const [label, p] of [
-  ['site renderer', siteRenderer],
-  ['site base.css', siteBaseCss],
-  ['site brand.mjs', siteBrand],
-  ['Inter font', interFont],
-]) {
-  if (!fs.existsSync(p)) {
-    console.error(`Missing ${label} at ${p}. Set SITE_DIR to your jseverino.com checkout.`);
-    process.exit(1);
-  }
-}
+assertSitePaths();
 
 const outDir = path.join(vaultDir, '.obsidian/plugins/severino-obsidian');
 fs.mkdirSync(outDir, { recursive: true });
@@ -61,13 +37,8 @@ const options = {
   treeShaking: true,
   banner: { js: banner },
   // The whole point: pull rendering + styles from their owners.
-  alias: {
-    '@site/markdown': siteRenderer,
-    '@site/base-css': siteBaseCss,
-    '@site/brand': siteBrand,
-    '@site/inter-font': interFont,
-  },
-  loader: { '.css': 'text', '.woff2': 'dataurl' },
+  alias: sitePaths,
+  loader: siteLoader,
   external: [
     'obsidian',
     'electron',

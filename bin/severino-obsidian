@@ -27,19 +27,13 @@ const spec = describeScripts(pkg, {
     'commands:emit': 'local_write',
     'commands:check': 'read',
   },
+  summaries: {
+    build: 'Bundle the plugin into the vault (site renderer + base.css inlined).',
+    dev: 'Watch-rebuild into the vault on change.',
+    typecheck: 'Type-check the source with tsc --noEmit.',
+    'commands:emit': 'Render the cordon-v4 command contract from src/commands.mjs.',
+    'commands:check': 'Fail if the committed command contract is stale.',
+  },
 });
-
-// npm scripts carry no help text, so the emitter leaves summaries blank; add a
-// one-liner per command so the contract (and the generated README) read well.
-const summaries = {
-  build: 'Bundle the plugin into the vault (site renderer + base.css inlined).',
-  dev: 'Watch-rebuild into the vault on change.',
-  typecheck: 'Type-check the source with tsc --noEmit.',
-  'commands:emit': 'Render the cordon-v4 command contract from src/commands.mjs.',
-  'commands:check': 'Fail if the committed command contract is stale.',
-};
-for (const command of spec.commands) {
-  if (summaries[command.name]) command.summary = summaries[command.name];
-}
 
 emitMain(spec, { url: import.meta.url }); // roots the contract at ../contract/severino-obsidian.json
