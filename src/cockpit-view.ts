@@ -11,6 +11,9 @@ export const COCKPIT_VIEW_TYPE = 'severino-cockpit';
 
 export interface CockpitActions {
   openPreview: () => void | Promise<void>;
+  newTask: () => void;
+  promoteNote: (relativePath: string) => void;
+  archiveNote: (relativePath: string) => Promise<void>;
 }
 
 // The cockpit shell: a brand-skinned, tabbed host. The chrome (logo header,
@@ -75,6 +78,10 @@ export class CockpitView extends ItemView {
         const file = this.app.vault.getAbstractFileByPath(relativePath);
         if (file instanceof TFile) await this.app.workspace.getLeaf(false).openFile(file);
       },
+      newTask: () => this.actions.newTask(),
+      promoteNote: (relativePath) => this.actions.promoteNote(relativePath),
+      archiveNote: (relativePath) => this.actions.archiveNote(relativePath),
+      refresh: () => void this.renderActive(),
     };
   }
 

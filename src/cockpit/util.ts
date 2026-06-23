@@ -24,8 +24,9 @@ export function renderLaunchButtons(container: HTMLElement, projectPath: string)
   for (const target of LAUNCH_TARGETS) {
     const btn = group.createEl('button', { cls: 'svo-launch-btn' });
     setIcon(btn, LAUNCH_ICON[target.target] ?? 'external-link');
+    // Obsidian's own tooltip (from aria-label). Do NOT also set `title`, or the
+    // browser renders a second, duplicate tooltip on top of it.
     btn.setAttr('aria-label', `Open in ${target.label}`);
-    btn.setAttr('title', `Open in ${target.label}`);
     btn.onclick = async (e) => {
       e.stopPropagation();
       try {

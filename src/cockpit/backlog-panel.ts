@@ -16,6 +16,8 @@ interface Board {
   total: number;
   counts: { stale: number };
   tasks: Task[];
+  shipped: Task[];
+  shipped_days: number;
 }
 
 // The backlog at a glance — open + stale counts, then the work that needs a
@@ -26,6 +28,12 @@ export class BacklogPanel implements CockpitPanel {
   title = 'Backlog';
 
   async render(body: HTMLElement, ctx: CockpitContext): Promise<void> {
+    const actions = body.createDiv({ cls: 'svo-panel-actions' });
+    const newBtn = actions.createEl('button', { cls: 'svo-panel-action mod-cta', text: '+ New' });
+    newBtn.onclick = () => ctx.newTask();
+    const viewAll = actions.createEl('button', { cls: 'svo-panel-action', text: 'View all' });
+    viewAll.onclick = () => void ctx.openFile('Backlog.base');
+
     const r = await runToolJson<Board>('severino-vault-mcp', ['task-list'], { cwd: ctx.vaultPath });
     const board = r.data;
     if (!board?.ok) {
@@ -46,7 +54,6 @@ export class BacklogPanel implements CockpitPanel {
     });
     if (!showing.length) {
       body.createDiv({ cls: 'svo-cockpit-empty', text: 'Nothing open. Clear.' });
-      return;
     }
     for (const t of showing) {
       const row = body.createDiv({ cls: 'svo-cockpit-row' });
@@ -56,6 +63,17 @@ export class BacklogPanel implements CockpitPanel {
         text: t.stale ? `${t.project} · ${t.age_days}d` : t.project,
       });
       row.onclick = () => void ctx.openFile(t.relative_path);
+    }
+
+    // Shipped this week — done in place, surfaced as a query (not archived).
+    if (board.shipped.length) {
+      body.createDiv({ cls: 'svo-cockpit-rowhead', text: `Shipped (${board.shipped_days}d)` });
+      for (const t of board.shipped.slice(0, 12)) {
+        const row = body.createDiv({ cls: 'svo-cockpit-row svo-shipped-row' });
+        row.createSpan({ cls: 'svo-cockpit-row-title', text: t.title });
+        row.createSpan({ cls: 'svo-cockpit-row-meta', text: t.project });
+        row.onclick = () => void ctx.openFile(t.relative_path);
+      }
     }
   }
 }

@@ -31,7 +31,16 @@ export default class SeverinoObsidianPlugin extends Plugin {
   async onload(): Promise<void> {
     // ── Flagship: the site preview pane ──────────────────────────────────────
     this.registerView(PREVIEW_VIEW_TYPE, (leaf) => new SitePreviewView(leaf));
-    this.registerView(COCKPIT_VIEW_TYPE, (leaf) => new CockpitView(leaf, { openPreview: () => this.openPreview() }));
+    this.registerView(
+      COCKPIT_VIEW_TYPE,
+      (leaf) =>
+        new CockpitView(leaf, {
+          openPreview: () => this.openPreview(),
+          newTask: () => void this.runNewTask(),
+          promoteNote: (path) => this.promoteNoteByPath(path),
+          archiveNote: (path) => this.archiveNoteByPath(path),
+        }),
+    );
     this.addRibbonIcon('eye', 'Severino: site preview', () => void this.openPreview());
     this.addRibbonIcon('layout-dashboard', 'Severino: cockpit', () => void this.openCockpit());
     // Register every command from the single-source surface (src/commands.mjs)
@@ -172,6 +181,29 @@ export default class SeverinoObsidianPlugin extends Plugin {
       new Notice('Open an inbox note (00 Inbox/) to promote.');
       return;
     }
+    await this.promoteFile(file);
+  }
+
+  // Cockpit triage entry point.
+  private promoteNoteByPath(path: string): void {
+    const file = this.app.vault.getAbstractFileByPath(path);
+    if (file instanceof TFile) void this.promoteFile(file);
+  }
+
+  // Archive an inbox capture to 99 Archive/ (Obsidian-managed move; updates links).
+  private async archiveNoteByPath(path: string): Promise<void> {
+    const file = this.app.vault.getAbstractFileByPath(path);
+    if (!(file instanceof TFile)) return;
+    try {
+      await this.app.fileManager.renameFile(file, `99 Archive/${file.name}`);
+      new Notice(`Archived ${file.name}`);
+      void this.updateBacklogBadge();
+    } catch (err) {
+      new Notice(`Archive failed: ${String(err)}`, 6000);
+    }
+  }
+
+  private async promoteFile(file: TFile): Promise<void> {
     const projects = await this.taskProjects();
     const content = await this.app.vault.read(file);
     // Default the title to the note's first non-frontmatter, non-empty line.

@@ -9,6 +9,14 @@ export interface CockpitContext {
   vaultPath: string;
   /** Open a vault file by its vault-relative path. */
   openFile: (relativePath: string) => Promise<void>;
+  /** Open the New-task modal. */
+  newTask: () => void;
+  /** Promote a note (e.g. an inbox capture) into a task via the MCP. */
+  promoteNote: (relativePath: string) => void;
+  /** Archive a note to 99 Archive/ (Obsidian-managed move). */
+  archiveNote: (relativePath: string) => Promise<void>;
+  /** Re-render the active panel (after a panel action mutates state). */
+  refresh: () => void;
 }
 
 export interface CockpitPanel {

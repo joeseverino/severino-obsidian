@@ -1,4 +1,4 @@
-import { Notice } from 'obsidian';
+import { Notice, TFile, TFolder, setIcon } from 'obsidian';
 import { runTool, runToolJson } from '../exec';
 import { CockpitContext, CockpitPanel } from './panel';
 
@@ -16,9 +16,10 @@ interface Brief {
   inbox?: { count: number };
 }
 
-// Vault health, derived from `severino-vault-mcp brief` — doc count, docs overdue
-// for review, inbox pileup — plus a one-click idempotent fix (backfill-aliases).
-// Read-first; fixes reuse the MCP, the plugin only renders + triggers.
+// Vault health + inbox triage. Health from `severino-vault-mcp brief` (docs to
+// review, doc count); triage lists 00 Inbox/ captures with one-action
+// promote (→ task) / archive; a one-click alias fix at the bottom. Read-first;
+// writes reuse the MCP / Obsidian — the panel only renders + triggers.
 export class VaultPanel implements CockpitPanel {
   id = 'vault';
   title = 'Vault';
@@ -31,14 +32,47 @@ export class VaultPanel implements CockpitPanel {
       return;
     }
     const review = brief.docs_to_review ?? { count: 0, docs: [] };
-    const inbox = brief.inbox?.count ?? 0;
+
+    // Inbox triage — list captures (top-level 00 Inbox/*.md).
+    const inboxFolder = ctx.app.vault.getAbstractFileByPath('00 Inbox');
+    const notes =
+      inboxFolder instanceof TFolder
+        ? inboxFolder.children.filter(
+            (c): c is TFile => c instanceof TFile && c.extension === 'md' && !c.name.startsWith('_'),
+          )
+        : [];
 
     const summary = body.createDiv({ cls: 'svo-cockpit-summary' });
     summary.createSpan({ cls: 'svo-cockpit-stat', text: `${brief.vault_doc_count ?? 0} docs` });
     const reviewStat = summary.createSpan({ cls: 'svo-cockpit-stat', text: `${review.count} to review` });
     if (review.count > 0) reviewStat.addClass('svo-cockpit-stat-warn');
-    const inboxStat = summary.createSpan({ cls: 'svo-cockpit-stat', text: `${inbox} inbox` });
-    if (inbox > 0) inboxStat.addClass('svo-cockpit-stat-warn');
+    const inboxStat = summary.createSpan({ cls: 'svo-cockpit-stat', text: `${notes.length} inbox` });
+    if (notes.length > 0) inboxStat.addClass('svo-cockpit-stat-warn');
+
+    if (notes.length) {
+      body.createDiv({ cls: 'svo-cockpit-rowhead', text: 'Inbox — triage' });
+      for (const note of notes) {
+        const row = body.createDiv({ cls: 'svo-cockpit-row' });
+        const title = row.createSpan({ cls: 'svo-cockpit-row-title', text: note.basename });
+        title.onclick = () => void ctx.openFile(note.path);
+        const acts = row.createDiv({ cls: 'svo-launch' });
+        const promote = acts.createEl('button', { cls: 'svo-launch-btn' });
+        setIcon(promote, 'list-plus');
+        promote.setAttr('aria-label', 'Promote to task');
+        promote.onclick = (e) => {
+          e.stopPropagation();
+          ctx.promoteNote(note.path);
+        };
+        const archive = acts.createEl('button', { cls: 'svo-launch-btn' });
+        setIcon(archive, 'archive');
+        archive.setAttr('aria-label', 'Archive');
+        archive.onclick = async (e) => {
+          e.stopPropagation();
+          await ctx.archiveNote(note.path);
+          ctx.refresh();
+        };
+      }
+    }
 
     if (review.count) {
       body.createDiv({ cls: 'svo-cockpit-rowhead', text: 'Overdue for review' });
@@ -48,13 +82,11 @@ export class VaultPanel implements CockpitPanel {
         row.createSpan({ cls: 'svo-cockpit-row-meta', text: `${doc.age_days}d` });
         row.onclick = () => void ctx.openFile(doc.obsidian_path);
       }
-    } else {
-      body.createDiv({ cls: 'svo-cockpit-empty', text: 'Nothing overdue. Clean.' });
     }
 
     const fixes = body.createDiv({ cls: 'svo-cockpit-fixes' });
     const aliasBtn = fixes.createEl('button', { text: 'Backfill aliases' });
-    aliasBtn.setAttr('title', 'Repair folder-note aliases (severino-vault-mcp backfill-aliases)');
+    aliasBtn.setAttr('aria-label', 'Repair folder-note aliases (severino-vault-mcp backfill-aliases)');
     aliasBtn.onclick = async () => {
       aliasBtn.disabled = true;
       const res = await runTool('severino-vault-mcp', ['backfill-aliases'], { cwd: ctx.vaultPath });
