@@ -210,3 +210,8 @@
 .svo-backlog-badge {
   cursor: pointer;
 }
+
+/* Ask the vault */
+.svo-ask-title { font-weight: 600; }
+.svo-ask-meta { font-size: var(--font-ui-smaller); color: var(--text-accent); }
+.svo-ask-summary { font-size: var(--font-ui-smaller); color: var(--text-muted); margin-top: 2px; }

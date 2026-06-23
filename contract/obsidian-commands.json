@@ -129,6 +129,15 @@
       "effect": "read",
       "paras": [],
       "examples": []
+    },
+    {
+      "name": "ask-the-vault",
+      "summary": "Ask the vault — Quick-switcher over the MCP find_runbook ranking; opens the hit.",
+      "args": [],
+      "effect": "read",
+      "paras": [],
+      "examples": [],
+      "delegates": "severino-vault-mcp find"
     }
   ]
 }

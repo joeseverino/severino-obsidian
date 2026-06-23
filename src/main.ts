@@ -11,6 +11,7 @@ import { fetchSchema, lintFrontmatter } from './schema';
 import { ResultModal, ResultSection } from './result-modal';
 import { NewTaskModal, ProjectOption } from './new-task-modal';
 import { CockpitView, COCKPIT_VIEW_TYPE } from './cockpit-view';
+import { AskVaultModal } from './ask-vault-modal';
 import { runToolJson } from './exec';
 
 const INDEXED_DIRS = ['01 Projects/', '02 Infrastructure/', '03 Runbooks/'];
@@ -47,6 +48,7 @@ export default class SeverinoObsidianPlugin extends Plugin {
       'copy-slug': () => void this.copySlug(),
       'new-task': () => void this.runNewTask(),
       'open-cockpit': () => void this.openCockpit(),
+      'ask-the-vault': () => new AskVaultModal(this.app, this.vaultPath()).open(),
     };
     for (const spec of OBSIDIAN_COMMANDS) {
       if (spec.type === 'editor') {
