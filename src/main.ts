@@ -1,4 +1,4 @@
-import { Plugin, Notice, Editor, FileSystemAdapter, debounce } from 'obsidian';
+import { Plugin, Notice, Editor, TFile, FileSystemAdapter, debounce } from 'obsidian';
 import { SitePreviewView, PREVIEW_VIEW_TYPE } from './preview-view';
 import { getActiveWriteup } from './writeup';
 import { assetReport } from './assets';
@@ -9,6 +9,11 @@ import { graphicsStatus, renderGraphics } from './graphics';
 import { effectFor, needsConfirm, Effect } from './cordon';
 import { fetchSchema, lintFrontmatter } from './schema';
 import { ResultModal, ResultSection } from './result-modal';
+import { NewTaskModal, ProjectOption } from './new-task-modal';
+import { CockpitView, COCKPIT_VIEW_TYPE } from './cockpit-view';
+import { AskVaultModal } from './ask-vault-modal';
+import { RelationEditorModal } from './relation-editor-modal';
+import { runToolJson } from './exec';
 
 const INDEXED_DIRS = ['01 Projects/', '02 Infrastructure/', '03 Runbooks/'];
 
@@ -26,7 +31,18 @@ export default class SeverinoObsidianPlugin extends Plugin {
   async onload(): Promise<void> {
     // ── Flagship: the site preview pane ──────────────────────────────────────
     this.registerView(PREVIEW_VIEW_TYPE, (leaf) => new SitePreviewView(leaf));
+    this.registerView(
+      COCKPIT_VIEW_TYPE,
+      (leaf) =>
+        new CockpitView(leaf, {
+          openPreview: () => this.openPreview(),
+          newTask: () => void this.runNewTask(),
+          promoteNote: (path) => this.promoteNoteByPath(path),
+          archiveNote: (path) => this.archiveNoteByPath(path),
+        }),
+    );
     this.addRibbonIcon('eye', 'Severino: site preview', () => void this.openPreview());
+    this.addRibbonIcon('layout-dashboard', 'Severino: cockpit', () => void this.openCockpit());
     // Register every command from the single-source surface (src/commands.mjs)
     // — the same array the cordon contract is emitted from. Only the handler
     // wiring lives here; the id/name/effect metadata has one home.
@@ -40,6 +56,11 @@ export default class SeverinoObsidianPlugin extends Plugin {
       'schema-check': () => void this.runSchemaCheck(),
       'open-on-site': () => void this.openOnSite(),
       'copy-slug': () => void this.copySlug(),
+      'new-task': () => void this.runNewTask(),
+      'open-cockpit': () => void this.openCockpit(),
+      'ask-the-vault': () => new AskVaultModal(this.app, this.vaultPath()).open(),
+      'edit-relations': () => void this.runRelationEditor(),
+      'promote-note': () => void this.runPromoteNote(),
     };
     for (const spec of OBSIDIAN_COMMANDS) {
       if (spec.type === 'editor') {
@@ -59,6 +80,11 @@ export default class SeverinoObsidianPlugin extends Plugin {
     this.gateEl = this.addStatusBarItem();
     this.gateEl.addClass('svo-gate');
 
+    // ── Backlog badge (status bar): open + stale + inbox; click → cockpit ─────
+    this.backlogEl = this.addStatusBarItem();
+    this.backlogEl.addClass('svo-gate', 'svo-backlog-badge');
+    this.backlogEl.onClickEvent(() => void this.openCockpit());
+
     // ── Reactivity: refresh preview + gate on context / content changes ───────
     const debouncedRefresh = debounce(() => void this.onContextChange(), 250, true);
     this.registerEvent(this.app.workspace.on('active-leaf-change', () => void this.onContextChange()));
@@ -66,6 +92,201 @@ export default class SeverinoObsidianPlugin extends Plugin {
     this.registerEvent(this.app.metadataCache.on('changed', () => void this.updateGate()));
 
     this.app.workspace.onLayoutReady(() => void this.onContextChange());
+    // Warm the project list so the New-task modal opens instantly.
+    this.app.workspace.onLayoutReady(() => void this.taskProjects());
+    this.app.workspace.onLayoutReady(() => void this.updateBacklogBadge());
+  }
+
+  private backlogEl: HTMLElement | null = null;
+
+  // The anti-forgetting nudge: open + stale + inbox, glanceable in the status
+  // bar. Derived from the vault brief (one read); refreshed on load + on create.
+  private async updateBacklogBadge(): Promise<void> {
+    if (!this.backlogEl) return;
+    const r = await runToolJson<{
+      ok: boolean;
+      tasks?: { open: number; stale: number };
+      inbox?: { count: number };
+    }>('severino-vault-mcp', ['brief', '--days', '7'], { cwd: this.vaultPath() });
+    const brief = r.data;
+    if (!brief?.ok) {
+      this.backlogEl.setText('');
+      return;
+    }
+    const stale = brief.tasks?.stale ?? 0;
+    const open = brief.tasks?.open ?? 0;
+    const inbox = brief.inbox?.count ?? 0;
+    const bits = [`${open} open`];
+    if (stale) bits.push(`${stale} stale`);
+    if (inbox) bits.push(`${inbox} inbox`);
+    this.backlogEl.setText(`⚑ ${bits.join(' · ')}`);
+    const needsAttention = stale > 0 || inbox > 0;
+    this.backlogEl.toggleClass('svo-gate-draft', needsAttention);
+    this.backlogEl.toggleClass('svo-gate-published', !needsAttention);
+  }
+
+  // ── New task ───────────────────────────────────────────────────────────────
+  // The project universe comes from the MCP (`task-projects`) — the plugin owns
+  // no vault-layout knowledge. Cached after the first read; invalidated on a
+  // create, since the open counts change.
+  private projectCache: ProjectOption[] | null = null;
+
+  private async taskProjects(): Promise<ProjectOption[]> {
+    if (this.projectCache) return this.projectCache;
+    const r = await runToolJson<{ ok: boolean; projects?: ProjectOption[] }>(
+      'severino-vault-mcp',
+      ['task-projects'],
+      { cwd: this.vaultPath() },
+    );
+    this.projectCache = r.data?.ok ? r.data.projects ?? [] : [];
+    return this.projectCache;
+  }
+
+  // Smart default: if the active file lives in a project, preselect it.
+  private contextProject(): string | null {
+    const path = this.app.workspace.getActiveFile()?.path ?? '';
+    const m = /^01 Projects\/([^/]+)\//.exec(path);
+    return m ? m[1] : null;
+  }
+
+  private async runNewTask(): Promise<void> {
+    const projects = await this.taskProjects();
+    if (!projects.length) {
+      new Notice('No projects found — is severino-vault-mcp installed?', 6000);
+      return;
+    }
+    new NewTaskModal(this.app, projects, this.contextProject(), async (input) => {
+      const args = ['task-add', input.title, '--effort', input.effort, '--priority', input.priority];
+      if (input.project) args.push('--project', input.project);
+      const r = await runToolJson<{ ok: boolean; doc_id?: string; relative_path?: string; error?: string }>(
+        'severino-vault-mcp',
+        args,
+        { cwd: this.vaultPath() },
+      );
+      const data = r.data;
+      if (!data?.ok) {
+        new Notice(`Task not created: ${data?.error ?? r.error ?? 'unknown error'}`, 8000);
+        return;
+      }
+      this.projectCache = null; // open counts changed
+      void this.updateBacklogBadge();
+      new Notice(`Created ${data.doc_id}`);
+      if (data.relative_path) await this.openCreated(data.relative_path);
+    }).open();
+  }
+
+  private async runPromoteNote(): Promise<void> {
+    const file = this.app.workspace.getActiveFile();
+    if (!file || !file.path.startsWith('00 Inbox/')) {
+      new Notice('Open an inbox note (00 Inbox/) to promote.');
+      return;
+    }
+    await this.promoteFile(file);
+  }
+
+  // Cockpit triage entry point.
+  private promoteNoteByPath(path: string): void {
+    const file = this.app.vault.getAbstractFileByPath(path);
+    if (file instanceof TFile) void this.promoteFile(file);
+  }
+
+  // Archive an inbox capture to 99 Archive/ (Obsidian-managed move; updates links).
+  private async archiveNoteByPath(path: string): Promise<void> {
+    const file = this.app.vault.getAbstractFileByPath(path);
+    if (!(file instanceof TFile)) return;
+    try {
+      await this.app.fileManager.renameFile(file, `99 Archive/${file.name}`);
+      new Notice(`Archived ${file.name}`);
+      void this.updateBacklogBadge();
+    } catch (err) {
+      new Notice(`Archive failed: ${String(err)}`, 6000);
+    }
+  }
+
+  private async promoteFile(file: TFile): Promise<void> {
+    const projects = await this.taskProjects();
+    const content = await this.app.vault.read(file);
+    // Default the title to the note's first non-frontmatter, non-empty line.
+    const defaultTitle = content
+      .replace(/^---[\s\S]*?---/, '')
+      .split('\n')
+      .map((l) => l.replace(/^#+\s*/, '').trim())
+      .find((l) => l.length > 0) ?? '';
+
+    new NewTaskModal(
+      this.app,
+      projects,
+      this.contextProject(),
+      async (input) => {
+        const args = ['promote-note', file.path, '--title', input.title, '--effort', input.effort, '--priority', input.priority];
+        if (input.project) args.push('--project', input.project);
+        const r = await runToolJson<{ ok: boolean; relative_path?: string; error?: string }>(
+          'severino-vault-mcp',
+          args,
+          { cwd: this.vaultPath() },
+        );
+        if (!r.data?.ok) {
+          new Notice(`Promote failed: ${r.data?.error ?? r.error ?? 'unknown'}`, 8000);
+          return;
+        }
+        this.projectCache = null;
+        void this.updateBacklogBadge();
+        new Notice(`Promoted → ${r.data.relative_path}`);
+        if (r.data.relative_path) await this.openCreated(r.data.relative_path);
+      },
+      { defaultTitle, heading: 'Promote note → task' },
+    ).open();
+  }
+
+  private async runRelationEditor(): Promise<void> {
+    const file = this.app.workspace.getActiveFile();
+    if (!file || file.extension !== 'md') {
+      new Notice('Open a markdown doc first.');
+      return;
+    }
+    const fm = this.app.metadataCache.getFileCache(file)?.frontmatter ?? {};
+    const current = {
+      doc_type: String(fm.doc_type ?? ''),
+      related_projects: Array.isArray(fm.related_projects) ? fm.related_projects.map(String) : [],
+      status: String(fm.status ?? ''),
+      sensitivity: String(fm.sensitivity ?? ''),
+    };
+    const [projects, schema] = await Promise.all([this.taskProjects(), fetchSchema(this.vaultPath())]);
+    if (!schema) {
+      new Notice('Could not load the schema from severino-vault-mcp.');
+      return;
+    }
+    new RelationEditorModal(
+      this.app,
+      file,
+      current,
+      projects.map((p) => p.slug),
+      { statuses: schema.statuses, task_statuses: schema.task_statuses, sensitivities: schema.sensitivities },
+      async (changes) => {
+        const args = ['update-frontmatter', file.path, '--set-related-projects', ...changes.related_projects];
+        if (changes.status) args.push('--status', changes.status);
+        if (changes.sensitivity) args.push('--sensitivity', changes.sensitivity);
+        const r = await runToolJson<{ ok: boolean; error?: string }>('severino-vault-mcp', args, {
+          cwd: this.vaultPath(),
+        });
+        if (r.data?.ok) new Notice('Relations updated.');
+        else new Notice(`Update failed: ${r.data?.error ?? r.error ?? 'unknown'}`, 8000);
+      },
+    ).open();
+  }
+
+  // The MCP writes the file straight to disk; give Obsidian a moment to index it,
+  // then open it in a new tab.
+  private async openCreated(relPath: string): Promise<void> {
+    for (let i = 0; i < 15; i++) {
+      const file = this.app.vault.getAbstractFileByPath(relPath);
+      if (file instanceof TFile) {
+        await this.app.workspace.getLeaf(true).openFile(file);
+        return;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+    new Notice(`Created — open ${relPath} from the file list shortly.`, 6000);
   }
 
   private async onContextChange(): Promise<void> {
@@ -87,6 +308,20 @@ export default class SeverinoObsidianPlugin extends Plugin {
     }
     workspace.revealLeaf(leaf);
     await this.onContextChange();
+  }
+
+  private async openCockpit(): Promise<void> {
+    const { workspace } = this.app;
+    let leaf = workspace.getLeavesOfType(COCKPIT_VIEW_TYPE)[0];
+    if (!leaf) {
+      const right = workspace.getRightLeaf(false);
+      if (!right) return;
+      leaf = right;
+      await leaf.setViewState({ type: COCKPIT_VIEW_TYPE, active: true });
+    } else if (leaf.view instanceof CockpitView) {
+      await leaf.view.refresh(); // re-pull fleet/vault state when re-opened
+    }
+    workspace.revealLeaf(leaf);
   }
 
   private async updateGate(): Promise<void> {

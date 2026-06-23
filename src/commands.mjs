@@ -22,4 +22,9 @@ export const OBSIDIAN_COMMANDS = [
   { id: 'schema-check', name: 'Schema: check this doc’s frontmatter', effect: 'read', group: 'Docs', type: 'callback', summary: 'Lint frontmatter against the MCP schema.', delegate: 'severino-vault-mcp schema' },
   { id: 'open-on-site', name: 'Open writeup on jseverino.com', effect: 'read', group: 'Publish', type: 'callback', summary: 'Open the live writeup URL in the browser.' },
   { id: 'copy-slug', name: 'Copy writeup slug', effect: 'read', group: 'Writeup', type: 'callback', summary: 'Copy the active writeup slug to the clipboard.' },
+  { id: 'new-task', name: 'New task', effect: 'vault_write', group: 'Backlog', type: 'callback', summary: 'Create a task (title + project picker) via the MCP, then open it.', delegate: 'severino-vault-mcp task-add' },
+  { id: 'open-cockpit', name: 'Cockpit: open', effect: 'read', group: 'Cockpit', type: 'callback', summary: 'Open the fleet cockpit panel (backlog + stale debt, derived from the MCP).' },
+  { id: 'ask-the-vault', name: 'Ask the vault', effect: 'read', group: 'Vault', type: 'callback', summary: 'Quick-switcher over the MCP find_runbook ranking; opens the hit.', delegate: 'severino-vault-mcp find' },
+  { id: 'edit-relations', name: 'Edit relations', effect: 'vault_write', group: 'Docs', type: 'callback', summary: 'Edit related_projects + status/sensitivity from the registry/schema; writes via the MCP.', delegate: 'severino-vault-mcp update-frontmatter' },
+  { id: 'promote-note', name: 'Promote inbox note to a task', effect: 'vault_write', group: 'Backlog', type: 'callback', summary: 'Promote the active inbox note into a task (body preserved) via the MCP, then open it.', delegate: 'severino-vault-mcp promote-note' },
 ];
