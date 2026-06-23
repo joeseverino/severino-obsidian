@@ -56,14 +56,20 @@ export class CockpitView extends ItemView {
     this.registerEvent(this.app.vault.on('create', () => this.scheduleRefresh()));
     this.registerEvent(this.app.vault.on('delete', () => this.scheduleRefresh()));
     this.registerEvent(this.app.vault.on('rename', () => this.scheduleRefresh()));
-    // Switching files updates the context bar instantly and re-scopes the
-    // active panel (the Backlog's Project view follows the file you're in).
+    // Switching files updates the context bar instantly (cheap). The panel only
+    // re-renders when the active *project* actually changes — so clicking around
+    // within a project (or among non-project files) doesn't churn.
     this.registerEvent(
       this.app.workspace.on('active-leaf-change', () => {
         this.renderContext();
-        this.scheduleRefresh();
+        const project = this.currentProject();
+        if (project !== this.lastProject) {
+          this.lastProject = project;
+          this.scheduleRefresh();
+        }
       }),
     );
+    this.lastProject = this.currentProject();
     this.renderContext();
     await this.renderActive();
     void this.tidy(); // catch up any hand-edited statuses into tasks/ ↔ done/
@@ -143,16 +149,27 @@ export class CockpitView extends ItemView {
     void this.renderActive();
   }
 
+  // Build into a detached node and swap it in atomically, so the panel never
+  // flashes empty while its data loads.
   private async renderActive(): Promise<void> {
     const body = this.bodyEl;
     if (!body) return;
-    body.empty();
+    const next = document.createElement('div');
     const panel = PANELS.find((p) => p.id === this.activeId) ?? PANELS[0];
     try {
-      await panel.render(body, this.context());
+      await panel.render(next, this.context());
     } catch (err) {
-      body.createDiv({ cls: 'svo-cockpit-empty', text: `Panel error: ${String(err)}` });
+      next.createDiv({ cls: 'svo-cockpit-empty', text: `Panel error: ${String(err)}` });
     }
+    body.replaceChildren(...Array.from(next.childNodes));
+  }
+
+  private lastProject: string | null = null;
+
+  private currentProject(): string | null {
+    const path = this.app.workspace.getActiveFile()?.path ?? '';
+    const m = /^01 Projects\/([^/]+)\//.exec(path);
+    return m ? m[1] : null;
   }
 
   // The context bar reflects the active file: a writeup gets an Open-preview

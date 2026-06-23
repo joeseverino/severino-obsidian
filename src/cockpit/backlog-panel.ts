@@ -1,3 +1,4 @@
+import { setIcon } from 'obsidian';
 import { runToolJson } from '../exec';
 import { CockpitContext, CockpitPanel } from './panel';
 
@@ -67,8 +68,9 @@ export class BacklogPanel implements CockpitPanel {
     // Open work — a project shows all of its open tasks; the fleet view curates
     // (stale first, else the top of the queue).
     const stale = board.tasks.filter((t) => t.stale);
-    const open = scope ? board.tasks : stale.length ? stale : board.tasks.slice(0, 8);
-    body.createDiv({ cls: 'svo-cockpit-rowhead', text: !scope && stale.length ? 'Stale — needs a look' : 'Open work' });
+    const showStale = !scope && stale.length > 0;
+    const open = scope ? board.tasks : showStale ? stale : board.tasks.slice(0, 8);
+    this.head(body, showStale ? 'Stale — needs a look' : 'Open work', showStale ? staleCount : board.count);
     if (!open.length) body.createDiv({ cls: 'svo-cockpit-empty', text: 'Nothing open here. Clear.' });
     for (const t of open) {
       const row = body.createDiv({ cls: 'svo-cockpit-row' });
@@ -77,15 +79,37 @@ export class BacklogPanel implements CockpitPanel {
       row.onclick = () => void ctx.openFile(t.relative_path);
     }
 
+    // Shipped — collapsed by default (it's the activity feed, not the work).
     if (board.shipped.length) {
-      body.createDiv({ cls: 'svo-cockpit-rowhead', text: `Shipped (${board.shipped_days}d)` });
-      for (const t of board.shipped.slice(0, 12)) {
-        const row = body.createDiv({ cls: 'svo-cockpit-row svo-shipped-row' });
+      const h = this.head(body, `Shipped (${board.shipped_days}d)`, board.shipped.length, true);
+      const list = body.createDiv();
+      list.hide();
+      for (const t of board.shipped) {
+        const row = list.createDiv({ cls: 'svo-cockpit-row svo-shipped-row' });
         row.createSpan({ cls: 'svo-cockpit-row-title', text: t.title });
         row.createSpan({ cls: 'svo-cockpit-row-meta', text: scope ? '' : t.project });
         row.onclick = () => void ctx.openFile(t.relative_path);
       }
+      h.onclick = () => {
+        const open = !list.isShown();
+        list.toggle(open);
+        h.toggleClass('is-open', open);
+      };
     }
+  }
+
+  // Section header with a right-aligned count; `collapsible` adds a disclosure
+  // chevron (the caller wires the toggle). Returns the header element.
+  private head(body: HTMLElement, label: string, count: number, collapsible = false): HTMLElement {
+    const h = body.createDiv({ cls: 'svo-cockpit-rowhead' });
+    const left = h.createSpan({ cls: 'svo-rowhead-label' });
+    if (collapsible) {
+      h.addClass('svo-collapsible-head');
+      setIcon(left.createSpan({ cls: 'svo-collapse-icon' }), 'chevron-right');
+    }
+    left.createSpan({ text: label });
+    h.createSpan({ cls: 'svo-rowhead-count', text: String(count) });
+    return h;
   }
 
   private activeProject(ctx: CockpitContext): string | null {
