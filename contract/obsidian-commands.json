@@ -121,6 +121,14 @@
       "paras": [],
       "examples": [],
       "delegates": "severino-vault-mcp task-add"
+    },
+    {
+      "name": "open-cockpit",
+      "summary": "Cockpit: open — Open the fleet cockpit panel (backlog + stale debt, derived from the MCP).",
+      "args": [],
+      "effect": "read",
+      "paras": [],
+      "examples": []
     }
   ]
 }

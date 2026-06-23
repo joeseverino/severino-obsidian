@@ -10,6 +10,7 @@ import { effectFor, needsConfirm, Effect } from './cordon';
 import { fetchSchema, lintFrontmatter } from './schema';
 import { ResultModal, ResultSection } from './result-modal';
 import { NewTaskModal, ProjectOption } from './new-task-modal';
+import { CockpitView, COCKPIT_VIEW_TYPE } from './cockpit-view';
 import { runToolJson } from './exec';
 
 const INDEXED_DIRS = ['01 Projects/', '02 Infrastructure/', '03 Runbooks/'];
@@ -28,7 +29,9 @@ export default class SeverinoObsidianPlugin extends Plugin {
   async onload(): Promise<void> {
     // ── Flagship: the site preview pane ──────────────────────────────────────
     this.registerView(PREVIEW_VIEW_TYPE, (leaf) => new SitePreviewView(leaf));
+    this.registerView(COCKPIT_VIEW_TYPE, (leaf) => new CockpitView(leaf));
     this.addRibbonIcon('eye', 'Severino: site preview', () => void this.openPreview());
+    this.addRibbonIcon('layout-dashboard', 'Severino: cockpit', () => void this.openCockpit());
     // Register every command from the single-source surface (src/commands.mjs)
     // — the same array the cordon contract is emitted from. Only the handler
     // wiring lives here; the id/name/effect metadata has one home.
@@ -43,6 +46,7 @@ export default class SeverinoObsidianPlugin extends Plugin {
       'open-on-site': () => void this.openOnSite(),
       'copy-slug': () => void this.copySlug(),
       'new-task': () => void this.runNewTask(),
+      'open-cockpit': () => void this.openCockpit(),
     };
     for (const spec of OBSIDIAN_COMMANDS) {
       if (spec.type === 'editor') {
@@ -155,6 +159,20 @@ export default class SeverinoObsidianPlugin extends Plugin {
     }
     workspace.revealLeaf(leaf);
     await this.onContextChange();
+  }
+
+  private async openCockpit(): Promise<void> {
+    const { workspace } = this.app;
+    let leaf = workspace.getLeavesOfType(COCKPIT_VIEW_TYPE)[0];
+    if (!leaf) {
+      const right = workspace.getRightLeaf(false);
+      if (!right) return;
+      leaf = right;
+      await leaf.setViewState({ type: COCKPIT_VIEW_TYPE, active: true });
+    } else if (leaf.view instanceof CockpitView) {
+      await leaf.view.refresh(); // re-pull fleet/vault state when re-opened
+    }
+    workspace.revealLeaf(leaf);
   }
 
   private async updateGate(): Promise<void> {

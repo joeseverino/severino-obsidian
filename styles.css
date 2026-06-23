@@ -69,3 +69,87 @@
   width: 100%;
   margin-bottom: var(--size-4-3, 0.75rem);
 }
+
+/* ── Cockpit ──────────────────────────────────────────────────────────────── */
+/* Native Obsidian surfaces + a restrained brand-navy accent, so it sits in the
+   sidebar without standing out. */
+.svo-cockpit {
+  padding: var(--size-4-3, 0.75rem);
+}
+.svo-cockpit-header {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5em;
+  margin-bottom: var(--size-4-3, 0.75rem);
+}
+.svo-cockpit-brand {
+  font-weight: 700;
+  color: var(--color-accent, #1e3a8a);
+  letter-spacing: 0.01em;
+}
+.svo-cockpit-heading {
+  color: var(--text-muted);
+  font-size: var(--font-ui-small);
+}
+.svo-cockpit-refresh {
+  margin-left: auto;
+  font-size: var(--font-ui-smaller);
+  padding: 2px 8px;
+}
+.svo-cockpit-panel {
+  margin-bottom: var(--size-4-4, 1rem);
+}
+.svo-cockpit-panel-title {
+  font-size: var(--font-ui-smaller);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-faint);
+  margin-bottom: var(--size-4-1, 0.25rem);
+}
+.svo-cockpit-summary {
+  display: flex;
+  gap: 0.5em;
+  margin-bottom: var(--size-4-2, 0.5rem);
+}
+.svo-cockpit-stat {
+  background: var(--background-secondary);
+  border-radius: var(--radius-s, 4px);
+  padding: 2px 8px;
+  font-size: var(--font-ui-small);
+}
+.svo-cockpit-stat-warn {
+  color: var(--text-on-accent, #fff);
+  background: var(--text-warning, #b8860b);
+}
+.svo-cockpit-rowhead {
+  font-size: var(--font-ui-smaller);
+  color: var(--text-muted);
+  margin: var(--size-4-2, 0.5rem) 0 var(--size-4-1, 0.25rem);
+}
+.svo-cockpit-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.5em;
+  padding: 4px 6px;
+  border-radius: var(--radius-s, 4px);
+  cursor: pointer;
+}
+.svo-cockpit-row:hover {
+  background: var(--background-modifier-hover);
+}
+.svo-cockpit-row-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.svo-cockpit-row-meta {
+  flex: none;
+  font-size: var(--font-ui-smaller);
+  color: var(--text-faint);
+}
+.svo-cockpit-empty {
+  color: var(--text-faint);
+  font-size: var(--font-ui-small);
+  padding: 4px 0;
+}
