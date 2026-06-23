@@ -32,16 +32,12 @@ export class ProjectsPanel implements CockpitPanel {
 
     for (const project of projects) {
       const path = projectPathOf(ctx.app, project.slug);
-      const card = body.createDiv({ cls: 'svo-proj' });
-
-      const head = card.createDiv({ cls: 'svo-proj-head' });
-      const name = head.createSpan({ cls: 'svo-proj-name', text: project.slug });
+      // One line: name (left), launch icons (right, on hover), count (far right).
+      const row = body.createDiv({ cls: 'svo-proj' });
+      const name = row.createSpan({ cls: 'svo-proj-name', text: project.slug });
       name.onclick = () => void ctx.openFile(`01 Projects/${project.slug}/index.md`);
-      const count = head.createSpan({ cls: 'svo-proj-count' });
-      if (project.open) count.setText(String(project.open));
-
-      if (path) renderLaunchButtons(card, path);
-      else card.createDiv({ cls: 'svo-cockpit-row-meta', text: 'no project_path' });
+      if (path) renderLaunchButtons(row, path);
+      row.createSpan({ cls: 'svo-proj-count', text: project.open ? String(project.open) : '' });
     }
   }
 }

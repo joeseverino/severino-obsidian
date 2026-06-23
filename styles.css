@@ -199,12 +199,20 @@
 .svo-cockpit-row-meta { flex: none; font-size: var(--font-ui-smaller); color: var(--text-faint); }
 .svo-cockpit-empty { color: var(--text-faint); font-size: var(--font-ui-small); padding: 6px 0; }
 
-/* Projects — name left, count right-aligned, icon launchers */
-.svo-proj { padding: 6px; border-radius: var(--radius-s, 4px); }
+/* Projects — one compact line: name (left), launch icons (right, on hover),
+   count (far right). */
+.svo-proj {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 6px;
+  border-radius: var(--radius-s, 4px);
+}
 .svo-proj:hover { background: var(--background-secondary); }
-.svo-proj-head { display: flex; align-items: center; justify-content: space-between; gap: 0.5em; }
 .svo-proj-name {
-  font-weight: 600;
+  flex: 1;
+  min-width: 0;
+  font-weight: 500;
   cursor: pointer;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -213,7 +221,7 @@
 .svo-proj-name:hover { color: var(--text-accent); }
 .svo-proj-count {
   flex: none;
-  min-width: 1.6em;
+  min-width: 1.4em;
   text-align: right;
   font-size: var(--font-ui-smaller);
   font-variant-numeric: tabular-nums;
@@ -221,13 +229,13 @@
 }
 .svo-cockpit-fixes { margin-top: var(--size-4-3, 0.75rem); }
 
-.svo-launch { display: flex; gap: 1px; margin-top: 3px; }
+.svo-launch { display: flex; gap: 0; margin-top: 3px; }
 .svo-launch-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 26px;
-  height: 23px;
+  width: 22px;
+  height: 20px;
   padding: 0;
   background: transparent;
   border: none;
@@ -236,7 +244,7 @@
   cursor: pointer;
 }
 .svo-launch-btn:hover { background: var(--background-modifier-hover); color: var(--text-normal); }
-.svo-launch-btn svg { width: 15px; height: 15px; }
+.svo-launch-btn svg { width: 14px; height: 14px; }
 
 .svo-backlog-badge { cursor: pointer; }
 
@@ -275,7 +283,7 @@
 
 /* Projects: launchers reveal on row hover so the list reads clean. The space is
    reserved (opacity, not display) so hovering doesn't shift the layout. */
-.svo-proj .svo-launch { opacity: 0; transition: opacity 0.12s ease; }
+.svo-proj .svo-launch { margin-top: 0; opacity: 0; transition: opacity 0.12s ease; }
 .svo-proj:hover .svo-launch,
 .svo-proj:focus-within .svo-launch { opacity: 1; }
 
