@@ -31,19 +31,22 @@ export class NewTaskModal extends Modal {
     private readonly projects: ProjectOption[],
     defaultProject: string | null,
     private readonly onSubmit: (input: NewTaskInput) => void | Promise<void>,
+    private readonly opts: { defaultTitle?: string; heading?: string } = {},
   ) {
     super(app);
     this.project = defaultProject;
+    this.title = opts.defaultTitle ?? '';
   }
 
   onOpen(): void {
     const { contentEl } = this;
     contentEl.addClass('svo-new-task');
-    contentEl.createEl('h3', { text: 'New task' });
+    contentEl.createEl('h3', { text: this.opts.heading ?? 'New task' });
 
     // Full-width title input (Obsidian styles bare inputs natively), Enter submits.
     const titleEl = contentEl.createEl('input', { type: 'text', cls: 'svo-new-task-title' });
     titleEl.placeholder = 'Imperative, e.g. "Fix the bats PATH trap"';
+    titleEl.value = this.title;
     titleEl.addEventListener('input', () => (this.title = titleEl.value));
     titleEl.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {

@@ -147,6 +147,15 @@
       "paras": [],
       "examples": [],
       "delegates": "severino-vault-mcp update-frontmatter"
+    },
+    {
+      "name": "promote-note",
+      "summary": "Promote inbox note to a task — Promote the active inbox note into a task (body preserved) via the MCP, then open it.",
+      "args": [],
+      "effect": "vault_write",
+      "paras": [],
+      "examples": [],
+      "delegates": "severino-vault-mcp promote-note"
     }
   ]
 }

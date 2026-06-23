@@ -51,6 +51,7 @@ export default class SeverinoObsidianPlugin extends Plugin {
       'open-cockpit': () => void this.openCockpit(),
       'ask-the-vault': () => new AskVaultModal(this.app, this.vaultPath()).open(),
       'edit-relations': () => void this.runRelationEditor(),
+      'promote-note': () => void this.runPromoteNote(),
     };
     for (const spec of OBSIDIAN_COMMANDS) {
       if (spec.type === 'editor') {
@@ -163,6 +164,46 @@ export default class SeverinoObsidianPlugin extends Plugin {
       new Notice(`Created ${data.doc_id}`);
       if (data.relative_path) await this.openCreated(data.relative_path);
     }).open();
+  }
+
+  private async runPromoteNote(): Promise<void> {
+    const file = this.app.workspace.getActiveFile();
+    if (!file || !file.path.startsWith('00 Inbox/')) {
+      new Notice('Open an inbox note (00 Inbox/) to promote.');
+      return;
+    }
+    const projects = await this.taskProjects();
+    const content = await this.app.vault.read(file);
+    // Default the title to the note's first non-frontmatter, non-empty line.
+    const defaultTitle = content
+      .replace(/^---[\s\S]*?---/, '')
+      .split('\n')
+      .map((l) => l.replace(/^#+\s*/, '').trim())
+      .find((l) => l.length > 0) ?? '';
+
+    new NewTaskModal(
+      this.app,
+      projects,
+      this.contextProject(),
+      async (input) => {
+        const args = ['promote-note', file.path, '--title', input.title, '--effort', input.effort, '--priority', input.priority];
+        if (input.project) args.push('--project', input.project);
+        const r = await runToolJson<{ ok: boolean; relative_path?: string; error?: string }>(
+          'severino-vault-mcp',
+          args,
+          { cwd: this.vaultPath() },
+        );
+        if (!r.data?.ok) {
+          new Notice(`Promote failed: ${r.data?.error ?? r.error ?? 'unknown'}`, 8000);
+          return;
+        }
+        this.projectCache = null;
+        void this.updateBacklogBadge();
+        new Notice(`Promoted → ${r.data.relative_path}`);
+        if (r.data.relative_path) await this.openCreated(r.data.relative_path);
+      },
+      { defaultTitle, heading: 'Promote note → task' },
+    ).open();
   }
 
   private async runRelationEditor(): Promise<void> {
