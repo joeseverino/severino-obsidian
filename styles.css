@@ -63,3 +63,9 @@
 .svo-gate-published {
   color: var(--color-green, #166534);
 }
+
+/* New-task modal: full-width title input (native input styling). */
+.svo-new-task-title {
+  width: 100%;
+  margin-bottom: var(--size-4-3, 0.75rem);
+}

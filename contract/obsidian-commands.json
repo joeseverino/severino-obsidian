@@ -112,6 +112,15 @@
       "effect": "read",
       "paras": [],
       "examples": []
+    },
+    {
+      "name": "new-task",
+      "summary": "New task — Create a task (title + project picker) via the MCP, then open it.",
+      "args": [],
+      "effect": "vault_write",
+      "paras": [],
+      "examples": [],
+      "delegates": "severino-vault-mcp task-add"
     }
   ]
 }

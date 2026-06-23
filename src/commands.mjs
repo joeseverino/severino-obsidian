@@ -22,4 +22,5 @@ export const OBSIDIAN_COMMANDS = [
   { id: 'schema-check', name: 'Schema: check this doc’s frontmatter', effect: 'read', group: 'Docs', type: 'callback', summary: 'Lint frontmatter against the MCP schema.', delegate: 'severino-vault-mcp schema' },
   { id: 'open-on-site', name: 'Open writeup on jseverino.com', effect: 'read', group: 'Publish', type: 'callback', summary: 'Open the live writeup URL in the browser.' },
   { id: 'copy-slug', name: 'Copy writeup slug', effect: 'read', group: 'Writeup', type: 'callback', summary: 'Copy the active writeup slug to the clipboard.' },
+  { id: 'new-task', name: 'New task', effect: 'vault_write', group: 'Backlog', type: 'callback', summary: 'Create a task (title + project picker) via the MCP, then open it.', delegate: 'severino-vault-mcp task-add' },
 ];

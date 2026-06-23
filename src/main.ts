@@ -1,4 +1,4 @@
-import { Plugin, Notice, Editor, FileSystemAdapter, debounce } from 'obsidian';
+import { Plugin, Notice, Editor, TFile, FileSystemAdapter, debounce } from 'obsidian';
 import { SitePreviewView, PREVIEW_VIEW_TYPE } from './preview-view';
 import { getActiveWriteup } from './writeup';
 import { assetReport } from './assets';
@@ -9,6 +9,8 @@ import { graphicsStatus, renderGraphics } from './graphics';
 import { effectFor, needsConfirm, Effect } from './cordon';
 import { fetchSchema, lintFrontmatter } from './schema';
 import { ResultModal, ResultSection } from './result-modal';
+import { NewTaskModal, ProjectOption } from './new-task-modal';
+import { runToolJson } from './exec';
 
 const INDEXED_DIRS = ['01 Projects/', '02 Infrastructure/', '03 Runbooks/'];
 
@@ -40,6 +42,7 @@ export default class SeverinoObsidianPlugin extends Plugin {
       'schema-check': () => void this.runSchemaCheck(),
       'open-on-site': () => void this.openOnSite(),
       'copy-slug': () => void this.copySlug(),
+      'new-task': () => void this.runNewTask(),
     };
     for (const spec of OBSIDIAN_COMMANDS) {
       if (spec.type === 'editor') {
@@ -66,6 +69,71 @@ export default class SeverinoObsidianPlugin extends Plugin {
     this.registerEvent(this.app.metadataCache.on('changed', () => void this.updateGate()));
 
     this.app.workspace.onLayoutReady(() => void this.onContextChange());
+    // Warm the project list so the New-task modal opens instantly.
+    this.app.workspace.onLayoutReady(() => void this.taskProjects());
+  }
+
+  // ── New task ───────────────────────────────────────────────────────────────
+  // The project universe comes from the MCP (`task-projects`) — the plugin owns
+  // no vault-layout knowledge. Cached after the first read; invalidated on a
+  // create, since the open counts change.
+  private projectCache: ProjectOption[] | null = null;
+
+  private async taskProjects(): Promise<ProjectOption[]> {
+    if (this.projectCache) return this.projectCache;
+    const r = await runToolJson<{ ok: boolean; projects?: ProjectOption[] }>(
+      'severino-vault-mcp',
+      ['task-projects'],
+      { cwd: this.vaultPath() },
+    );
+    this.projectCache = r.data?.ok ? r.data.projects ?? [] : [];
+    return this.projectCache;
+  }
+
+  // Smart default: if the active file lives in a project, preselect it.
+  private contextProject(): string | null {
+    const path = this.app.workspace.getActiveFile()?.path ?? '';
+    const m = /^01 Projects\/([^/]+)\//.exec(path);
+    return m ? m[1] : null;
+  }
+
+  private async runNewTask(): Promise<void> {
+    const projects = await this.taskProjects();
+    if (!projects.length) {
+      new Notice('No projects found — is severino-vault-mcp installed?', 6000);
+      return;
+    }
+    new NewTaskModal(this.app, projects, this.contextProject(), async (input) => {
+      const args = ['task-add', input.title, '--effort', input.effort, '--priority', input.priority];
+      if (input.project) args.push('--project', input.project);
+      const r = await runToolJson<{ ok: boolean; doc_id?: string; relative_path?: string; error?: string }>(
+        'severino-vault-mcp',
+        args,
+        { cwd: this.vaultPath() },
+      );
+      const data = r.data;
+      if (!data?.ok) {
+        new Notice(`Task not created: ${data?.error ?? r.error ?? 'unknown error'}`, 8000);
+        return;
+      }
+      this.projectCache = null; // open counts changed
+      new Notice(`Created ${data.doc_id}`);
+      if (data.relative_path) await this.openCreated(data.relative_path);
+    }).open();
+  }
+
+  // The MCP writes the file straight to disk; give Obsidian a moment to index it,
+  // then open it in a new tab.
+  private async openCreated(relPath: string): Promise<void> {
+    for (let i = 0; i < 15; i++) {
+      const file = this.app.vault.getAbstractFileByPath(relPath);
+      if (file instanceof TFile) {
+        await this.app.workspace.getLeaf(true).openFile(file);
+        return;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+    new Notice(`Created — open ${relPath} from the file list shortly.`, 6000);
   }
 
   private async onContextChange(): Promise<void> {
