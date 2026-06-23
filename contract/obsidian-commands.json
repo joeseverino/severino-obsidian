@@ -138,6 +138,15 @@
       "paras": [],
       "examples": [],
       "delegates": "severino-vault-mcp find"
+    },
+    {
+      "name": "edit-relations",
+      "summary": "Edit relations — Edit related_projects + status/sensitivity from the registry/schema; writes via the MCP.",
+      "args": [],
+      "effect": "vault_write",
+      "paras": [],
+      "examples": [],
+      "delegates": "severino-vault-mcp update-frontmatter"
     }
   ]
 }

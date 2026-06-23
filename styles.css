@@ -215,3 +215,27 @@
 .svo-ask-title { font-weight: 600; }
 .svo-ask-meta { font-size: var(--font-ui-smaller); color: var(--text-accent); }
 .svo-ask-summary { font-size: var(--font-ui-smaller); color: var(--text-muted); margin-top: 2px; }
+
+/* Relation editor */
+.svo-relations-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 0 0 var(--size-4-2, 0.5rem) 0;
+}
+.svo-relations-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 999px;
+  padding: 1px 8px;
+  font-size: var(--font-ui-smaller);
+}
+.svo-relations-x {
+  cursor: pointer;
+  color: var(--text-faint);
+}
+.svo-relations-x:hover { color: var(--text-error); }
+.svo-relations-empty { color: var(--text-faint); font-size: var(--font-ui-small); }

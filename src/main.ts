@@ -12,6 +12,7 @@ import { ResultModal, ResultSection } from './result-modal';
 import { NewTaskModal, ProjectOption } from './new-task-modal';
 import { CockpitView, COCKPIT_VIEW_TYPE } from './cockpit-view';
 import { AskVaultModal } from './ask-vault-modal';
+import { RelationEditorModal } from './relation-editor-modal';
 import { runToolJson } from './exec';
 
 const INDEXED_DIRS = ['01 Projects/', '02 Infrastructure/', '03 Runbooks/'];
@@ -49,6 +50,7 @@ export default class SeverinoObsidianPlugin extends Plugin {
       'new-task': () => void this.runNewTask(),
       'open-cockpit': () => void this.openCockpit(),
       'ask-the-vault': () => new AskVaultModal(this.app, this.vaultPath()).open(),
+      'edit-relations': () => void this.runRelationEditor(),
     };
     for (const spec of OBSIDIAN_COMMANDS) {
       if (spec.type === 'editor') {
@@ -161,6 +163,43 @@ export default class SeverinoObsidianPlugin extends Plugin {
       new Notice(`Created ${data.doc_id}`);
       if (data.relative_path) await this.openCreated(data.relative_path);
     }).open();
+  }
+
+  private async runRelationEditor(): Promise<void> {
+    const file = this.app.workspace.getActiveFile();
+    if (!file || file.extension !== 'md') {
+      new Notice('Open a markdown doc first.');
+      return;
+    }
+    const fm = this.app.metadataCache.getFileCache(file)?.frontmatter ?? {};
+    const current = {
+      doc_type: String(fm.doc_type ?? ''),
+      related_projects: Array.isArray(fm.related_projects) ? fm.related_projects.map(String) : [],
+      status: String(fm.status ?? ''),
+      sensitivity: String(fm.sensitivity ?? ''),
+    };
+    const [projects, schema] = await Promise.all([this.taskProjects(), fetchSchema(this.vaultPath())]);
+    if (!schema) {
+      new Notice('Could not load the schema from severino-vault-mcp.');
+      return;
+    }
+    new RelationEditorModal(
+      this.app,
+      file,
+      current,
+      projects.map((p) => p.slug),
+      { statuses: schema.statuses, task_statuses: schema.task_statuses, sensitivities: schema.sensitivities },
+      async (changes) => {
+        const args = ['update-frontmatter', file.path, '--set-related-projects', ...changes.related_projects];
+        if (changes.status) args.push('--status', changes.status);
+        if (changes.sensitivity) args.push('--sensitivity', changes.sensitivity);
+        const r = await runToolJson<{ ok: boolean; error?: string }>('severino-vault-mcp', args, {
+          cwd: this.vaultPath(),
+        });
+        if (r.data?.ok) new Notice('Relations updated.');
+        else new Notice(`Update failed: ${r.data?.error ?? r.error ?? 'unknown'}`, 8000);
+      },
+    ).open();
   }
 
   // The MCP writes the file straight to disk; give Obsidian a moment to index it,

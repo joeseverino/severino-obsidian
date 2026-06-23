@@ -12,6 +12,7 @@ export interface VaultSchema {
   required_fields: string[];
   sensitivities: string[];
   statuses: string[];
+  task_statuses: string[];
 }
 
 let cache: VaultSchema | null = null;
