@@ -20,6 +20,7 @@ interface Brief {
 // for review, inbox pileup — plus a one-click idempotent fix (backfill-aliases).
 // Read-first; fixes reuse the MCP, the plugin only renders + triggers.
 export class VaultPanel implements CockpitPanel {
+  id = 'vault';
   title = 'Vault';
 
   async render(body: HTMLElement, ctx: CockpitContext): Promise<void> {
@@ -51,8 +52,8 @@ export class VaultPanel implements CockpitPanel {
       body.createDiv({ cls: 'svo-cockpit-empty', text: 'Nothing overdue. Clean.' });
     }
 
-    const fixes = body.createDiv({ cls: 'svo-cockpit-actions svo-cockpit-fixes' });
-    const aliasBtn = fixes.createEl('button', { cls: 'svo-cockpit-launch', text: 'Backfill aliases' });
+    const fixes = body.createDiv({ cls: 'svo-cockpit-fixes' });
+    const aliasBtn = fixes.createEl('button', { text: 'Backfill aliases' });
     aliasBtn.setAttr('title', 'Repair folder-note aliases (severino-vault-mcp backfill-aliases)');
     aliasBtn.onclick = async () => {
       aliasBtn.disabled = true;

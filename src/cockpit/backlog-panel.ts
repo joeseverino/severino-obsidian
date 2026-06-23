@@ -22,6 +22,7 @@ interface Board {
 // look (stale first, else the top open items), each row opening the task. Thin
 // over `severino-vault-mcp task-list`: the MCP is the brain, this only paints.
 export class BacklogPanel implements CockpitPanel {
+  id = 'backlog';
   title = 'Backlog';
 
   async render(body: HTMLElement, ctx: CockpitContext): Promise<void> {

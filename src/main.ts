@@ -31,7 +31,7 @@ export default class SeverinoObsidianPlugin extends Plugin {
   async onload(): Promise<void> {
     // ── Flagship: the site preview pane ──────────────────────────────────────
     this.registerView(PREVIEW_VIEW_TYPE, (leaf) => new SitePreviewView(leaf));
-    this.registerView(COCKPIT_VIEW_TYPE, (leaf) => new CockpitView(leaf));
+    this.registerView(COCKPIT_VIEW_TYPE, (leaf) => new CockpitView(leaf, { openPreview: () => this.openPreview() }));
     this.addRibbonIcon('eye', 'Severino: site preview', () => void this.openPreview());
     this.addRibbonIcon('layout-dashboard', 'Severino: cockpit', () => void this.openCockpit());
     // Register every command from the single-source surface (src/commands.mjs)
