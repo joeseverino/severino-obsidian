@@ -1,6 +1,9 @@
 import { ItemView, WorkspaceLeaf, TFile, FileSystemAdapter } from 'obsidian';
 import { CockpitPanel, CockpitContext } from './cockpit/panel';
 import { BacklogPanel } from './cockpit/backlog-panel';
+import { ProjectsPanel } from './cockpit/projects-panel';
+import { VaultPanel } from './cockpit/vault-panel';
+import brandMark from '@site/brand-mark';
 
 export const COCKPIT_VIEW_TYPE = 'severino-cockpit';
 
@@ -8,7 +11,7 @@ export const COCKPIT_VIEW_TYPE = 'severino-cockpit';
 // It owns only the chrome (header, layout, refresh) and the file-open seam;
 // every panel derives its data from the MCP / CLIs. To add a panel, append it
 // here — the shell does not change.
-const PANELS: CockpitPanel[] = [new BacklogPanel()];
+const PANELS: CockpitPanel[] = [new BacklogPanel(), new ProjectsPanel(), new VaultPanel()];
 
 export class CockpitView extends ItemView {
   constructor(leaf: WorkspaceLeaf) {
@@ -53,7 +56,9 @@ export class CockpitView extends ItemView {
     contentEl.addClass('svo-cockpit');
 
     const header = contentEl.createDiv({ cls: 'svo-cockpit-header' });
-    header.createSpan({ cls: 'svo-cockpit-brand', text: 'Severino' });
+    // The real brand JS mark (bundled from the brand kit at build time — a
+    // trusted static asset, not user input).
+    header.createSpan({ cls: 'svo-cockpit-logo' }).innerHTML = brandMark;
     header.createSpan({ cls: 'svo-cockpit-heading', text: 'Cockpit' });
     const refresh = header.createEl('button', { cls: 'svo-cockpit-refresh', text: 'Refresh' });
     refresh.onclick = () => void this.refresh();

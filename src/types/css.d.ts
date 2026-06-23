@@ -20,6 +20,13 @@ declare module '@site/inter-font' {
   export default dataUri;
 }
 
+// The brand JS monogram mark (public/assets/brand/mark.svg), bundled as text so
+// the cockpit header shows the real logo without forking the asset.
+declare module '@site/brand-mark' {
+  const svg: string;
+  export default svg;
+}
+
 // The token-synced brand identity (src/lib/brand.mjs).
 declare module '@site/brand' {
   export const BRAND: { navy: string; navyDeep: string; [key: string]: unknown };

@@ -66,6 +66,11 @@ export default class SeverinoObsidianPlugin extends Plugin {
     this.gateEl = this.addStatusBarItem();
     this.gateEl.addClass('svo-gate');
 
+    // ── Backlog badge (status bar): open + stale + inbox; click → cockpit ─────
+    this.backlogEl = this.addStatusBarItem();
+    this.backlogEl.addClass('svo-gate', 'svo-backlog-badge');
+    this.backlogEl.onClickEvent(() => void this.openCockpit());
+
     // ── Reactivity: refresh preview + gate on context / content changes ───────
     const debouncedRefresh = debounce(() => void this.onContextChange(), 250, true);
     this.registerEvent(this.app.workspace.on('active-leaf-change', () => void this.onContextChange()));
@@ -75,6 +80,35 @@ export default class SeverinoObsidianPlugin extends Plugin {
     this.app.workspace.onLayoutReady(() => void this.onContextChange());
     // Warm the project list so the New-task modal opens instantly.
     this.app.workspace.onLayoutReady(() => void this.taskProjects());
+    this.app.workspace.onLayoutReady(() => void this.updateBacklogBadge());
+  }
+
+  private backlogEl: HTMLElement | null = null;
+
+  // The anti-forgetting nudge: open + stale + inbox, glanceable in the status
+  // bar. Derived from the vault brief (one read); refreshed on load + on create.
+  private async updateBacklogBadge(): Promise<void> {
+    if (!this.backlogEl) return;
+    const r = await runToolJson<{
+      ok: boolean;
+      tasks?: { open: number; stale: number };
+      inbox?: { count: number };
+    }>('severino-vault-mcp', ['brief', '--days', '7'], { cwd: this.vaultPath() });
+    const brief = r.data;
+    if (!brief?.ok) {
+      this.backlogEl.setText('');
+      return;
+    }
+    const stale = brief.tasks?.stale ?? 0;
+    const open = brief.tasks?.open ?? 0;
+    const inbox = brief.inbox?.count ?? 0;
+    const bits = [`${open} open`];
+    if (stale) bits.push(`${stale} stale`);
+    if (inbox) bits.push(`${inbox} inbox`);
+    this.backlogEl.setText(`⚑ ${bits.join(' · ')}`);
+    const needsAttention = stale > 0 || inbox > 0;
+    this.backlogEl.toggleClass('svo-gate-draft', needsAttention);
+    this.backlogEl.toggleClass('svo-gate-published', !needsAttention);
   }
 
   // ── New task ───────────────────────────────────────────────────────────────
@@ -121,6 +155,7 @@ export default class SeverinoObsidianPlugin extends Plugin {
         return;
       }
       this.projectCache = null; // open counts changed
+      void this.updateBacklogBadge();
       new Notice(`Created ${data.doc_id}`);
       if (data.relative_path) await this.openCreated(data.relative_path);
     }).open();

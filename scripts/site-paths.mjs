@@ -29,10 +29,11 @@ export const sitePaths = {
   '@site/web-styles': path.join(siteDir, 'src/lib/web-styles.mjs'),
   '@site/frontmatter': path.join(siteDir, 'src/lib/frontmatter.mjs'),
   '@site/inter-font': path.join(siteDir, 'public/assets/fonts/inter/inter-variable-latin.woff2'),
+  '@site/brand-mark': path.join(siteDir, 'public/assets/brand/mark.svg'),
 };
 
-// esbuild loaders for the non-JS owners (CSS as text, the woff2 as a data URL).
-export const siteLoader = { '.css': 'text', '.woff2': 'dataurl' };
+// esbuild loaders for the non-JS owners (CSS/SVG as text, the woff2 as a data URL).
+export const siteLoader = { '.css': 'text', '.svg': 'text', '.woff2': 'dataurl' };
 
 const labels = {
   '@site/markdown': 'site renderer',
