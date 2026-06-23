@@ -1,80 +1,88 @@
 # severino-obsidian
 
-The editor-side surface for the Severino Labs vault: an Obsidian plugin that
-previews writeups **exactly as `jseverino.com` renders them**, plus a few
-lightweight authoring power-ups.
+The **editor-side cockpit** for the Severino Labs vault — an Obsidian plugin that
+turns the vault into a working surface for the whole fleet: a backlog cockpit,
+task capture and triage, project launchers, and a site-accurate writeup preview.
 
-It is built on one principle — **own almost nothing**. The hard parts already
-have owners; this plugin is Obsidian glue that consumes them:
+It is built on one rule — **own nothing but the UI**. The hard parts already have
+owners; this plugin renders them and delegates to them, so it can grow without
+becoming a second source of truth. The full design is in
+**[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)**.
 
-| Concern | Owner (single source of truth) | How this plugin uses it |
+| Concern | Owner (single source of truth) | How the plugin uses it |
 |---|---|---|
-| markdown → HTML, incl. the `::figure` / `::table` / `::terminal` DSL | `jseverino.com/src/lib/markdown.ts` | imports `renderWriteupHtml` (esbuild alias) — never reimplemented |
-| brand tokens + writeup CSS | `severino-brand/brand/tokens.json` → site `base.css` (token-synced) | injects `base.css` into the preview iframe |
-| writeup validation / publish prep | `severino-vault-mcp` | surfaces read-only gate state; defers authority |
-| repo governance, command contract, CI | `cordon-starter` + `cordon` | standard cornerstones |
+| task logic, schema, search, the one writer | `severino-vault-mcp` (the MCP) | shells out to its CLI subcommands |
+| markdown→HTML + the `::figure`/`::table`/`::terminal` DSL | `jseverino.com/src/lib/markdown.ts` | imports `renderWriteupHtml` (esbuild alias) |
+| brand tokens + writeup CSS + the JS mark | `severino-brand` → site `base.css` / `mark.svg` | bundled from source at build time |
 
-If a feature would re-implement another owner's piece, it's out by design.
+If a feature would re-implement an owner's piece, it's out by design.
 
-## Features
+## What it does
 
-- **Site preview pane** — live, sandboxed iframe rendering the active writeup
-  with the site's own renderer + CSS. `./images/` resolve to local files, so
-  drafts preview without running `dev:drafts`.
-- **Publish gate** — runs `severino-vault-mcp validate-writeup --draft` and
-  surfaces blockers / unknown tags / missing images / unresolved refs / nits.
-- **Asset doctor** — reports orphaned images (in `images/` but unreferenced) and
-  broken refs (referenced but missing), enforcing the orphan-free `images/` rule.
-- **Graphics: status / render** — finds `graphics/*.figure.json` / `*.mmd` that
-  aren't rendered into `images/` yet, and renders them via `brand figure` /
-  `diagram`.
-- **Schema check** — lints an indexed doc's frontmatter against the MCP's
-  canonical `schema` (the single source HQ and the site validate against).
-- **Sync to site** — runs `site sync` so a build / `astro dev` reflects vault edits.
-- **Gate badge** — a status-bar pill showing `published` / `featured` /
-  `published_at` for the active writeup.
-- **DSL inserts** — `Insert figure / table / terminal block` commands that drop
-  the site's block-DSL skeleton (and wrap a selection if you have one).
-- **Open on site / copy slug** — jump to `jseverino.com/portfolio/<slug>/`.
+**The cockpit** (a brand-skinned side panel — ribbon `▦` or `Cockpit: open`):
 
-Writeup commands are scoped to `05 Writeups/<slug>/index.md`; the schema check
-applies to indexed docs under `01/02/03`.
+- **Backlog** — open work + a collapsible *Shipped (7d)* feed, **scoped to the
+  project you're in** (Project / All toggle). `+ New` opens the task modal;
+  `View all` opens the native `Backlog.base`.
+- **Projects** — every project with its open-task count and **launch buttons**
+  (Finder · VS Code · iTerm · GitHub), revealed on hover.
+- **Writeups** — drafts and published, from the site pipeline.
+- **Vault** — health (docs to review, inbox) + **inbox triage** (promote → task /
+  archive) + a one-click alias fix.
+- A status-bar badge (`open · stale · inbox`) and a context bar that reacts to the
+  active file (a writeup → *Open preview*, a project → launch).
 
-## Effects & the cordon contract
+**Task & vault commands** — all thin over the MCP:
 
-The command surface is declared once in `src/commands.mjs` and rendered into both
-the live commands and a **cordon-v4 contract** (`contract/obsidian-commands.json`,
-`npm run commands:emit`) — making this a third conformant cordon emitter beside
-the Bash (`tools`) and Python (MCP) ones. Each command carries its `effect`
-(`read < local_write < vault_write < remote_write < deploy`) and the fleet
-command it `delegates` to. The plugin derives the same effects from
-`tools describe --repos` to risk-gate at runtime: only `remote_write` / `deploy`
-prompt, so a single-user flow is friction-free.
+- **New task** / **Promote inbox note to a task** — capture, validated and filed
+  by the MCP (`task-add` / `promote-note`).
+- **Edit relations** — set `related_projects` from the live registry and
+  status/sensitivity from the schema enums (writes via `update-frontmatter`).
+- **Ask the vault** — the MCP's runbook search through Obsidian's quick-switcher.
 
-## Develop
+**Writeup authoring** — the original surface, still here:
 
-The build bundles the site renderer + `base.css` and writes the plugin straight
-into the vault. Paths are overridable (same pattern as `severino-brand/sync.mjs`):
+- **Site preview** — a sandboxed iframe rendering the active writeup exactly as
+  `jseverino.com` will, using the site's own renderer + `base.css`.
+- **Publish gate**, **asset doctor**, **graphics render**, **schema check**,
+  **sync to site**, **DSL inserts**, **open on site / copy slug**.
+
+## Quick start
 
 ```sh
 npm install
-npm run build        # one-shot bundle → <vault>/.obsidian/plugins/severino-obsidian/
-npm run dev          # watch mode
+npm run build        # bundles into <vault>/.obsidian/plugins/severino-obsidian/
 
-# overrides
+# overrides (same pattern as severino-brand/sync.mjs)
 SITE_DIR=/path/to/jseverino.com VAULT_DIR="/path/to/Severino Labs" npm run build
 ```
 
-Then in Obsidian: **Settings → Community plugins → enable "Severino Labs"**
-(reload the list if it doesn't appear). Open a writeup and run
-**Site preview: open pane**.
+Then in Obsidian: **Settings → Community plugins → enable "Severino Labs"**, and
+open the cockpit from the ribbon. The CLIs it shells out to
+(`severino-vault-mcp`, `site`, `brand`, `diagram`) must be on `~/.local/bin`.
+
+## Develop
+
+```sh
+npm run dev             # watch-rebuild into the vault
+npm run typecheck       # tsc --noEmit
+npm run commands:emit   # regenerate the cordon command contract after editing src/commands.mjs
+```
+
+The command surface is declared once in `src/commands.mjs` and rendered into the
+live commands, the cordon-v4 contract (`contract/obsidian-commands.json`), and the
+reference below — they cannot drift. Each command carries its `effect`
+(`read < local_write < vault_write < remote_write < deploy`) and the fleet command
+it delegates to.
+
+- **Architecture:** [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
+- **Cornerstones / governance:** [docs/CORNERSTONES.md](docs/CORNERSTONES.md)
 
 ## Governance
 
 The command surface is derived from `package.json` scripts via the cordon emitter
-(`bin/severino-obsidian`); each command's blast radius lives in
-`contract/severino-obsidian.json`. Regenerate after a scripts change with
-`npm run describe:write`. The reference below is rendered from that contract by
+(`bin/severino-obsidian`); regenerate after a scripts change with
+`npm run describe:write`. The reference below is rendered from the contract by
 `scripts/gen-readme.mjs` and gate-checked — don't hand-edit it.
 
 <!-- BEGIN GENERATED: cli-reference (scripts/gen-readme.mjs — do not edit by hand) -->
@@ -119,6 +127,11 @@ Severino Labs Obsidian plugin — in-editor command surface.
 | `schema-check` | `read` | Schema: check this doc’s frontmatter — Lint frontmatter against the MCP schema. |
 | `open-on-site` | `read` | Open writeup on jseverino.com — Open the live writeup URL in the browser. |
 | `copy-slug` | `read` | Copy writeup slug — Copy the active writeup slug to the clipboard. |
+| `new-task` | `vault_write` | New task — Create a task (title + project picker) via the MCP, then open it. |
+| `open-cockpit` | `read` | Cockpit: open — Open the fleet cockpit panel (backlog + stale debt, derived from the MCP). |
+| `ask-the-vault` | `read` | Ask the vault — Quick-switcher over the MCP find_runbook ranking; opens the hit. |
+| `edit-relations` | `vault_write` | Edit relations — Edit related_projects + status/sensitivity from the registry/schema; writes via the MCP. |
+| `promote-note` | `vault_write` | Promote inbox note to a task — Promote the active inbox note into a task (body preserved) via the MCP, then open it. |
 
 <!-- END GENERATED: cli-reference -->
 
