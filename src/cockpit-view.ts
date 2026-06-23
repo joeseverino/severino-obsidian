@@ -5,6 +5,7 @@ import { ProjectsPanel } from './cockpit/projects-panel';
 import { WriteupsPanel } from './cockpit/writeups-panel';
 import { VaultPanel } from './cockpit/vault-panel';
 import { projectPathOf, renderLaunchButtons } from './cockpit/util';
+import { runToolJson } from './exec';
 import brandMark from '@site/brand-mark';
 
 export const COCKPIT_VIEW_TYPE = 'severino-cockpit';
@@ -58,6 +59,17 @@ export class CockpitView extends ItemView {
     this.registerEvent(this.app.workspace.on('active-leaf-change', () => this.renderContext()));
     this.renderContext();
     await this.renderActive();
+    void this.tidy(); // catch up any hand-edited statuses into tasks/ ↔ done/
+  }
+
+  // Quiet, idempotent re-home of tasks whose status was edited by hand (a Base /
+  // Properties edit that didn't move through the MCP). Re-renders only if it
+  // actually moved something. Run on open + Refresh — not on every keystroke.
+  private async tidy(): Promise<void> {
+    const r = await runToolJson<{ moved: number }>('severino-vault-mcp', ['task-reconcile'], {
+      cwd: this.vaultPath(),
+    });
+    if ((r.data?.moved ?? 0) > 0) void this.renderActive();
   }
 
   private scheduleRefresh = debounce(() => {
@@ -100,6 +112,7 @@ export class CockpitView extends ItemView {
     refresh.onclick = () => {
       this.renderContext();
       void this.renderActive();
+      void this.tidy();
     };
 
     this.contextEl = contentEl.createDiv({ cls: 'svo-cockpit-context' });
