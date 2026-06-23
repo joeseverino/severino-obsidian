@@ -56,7 +56,14 @@ export class CockpitView extends ItemView {
     this.registerEvent(this.app.vault.on('create', () => this.scheduleRefresh()));
     this.registerEvent(this.app.vault.on('delete', () => this.scheduleRefresh()));
     this.registerEvent(this.app.vault.on('rename', () => this.scheduleRefresh()));
-    this.registerEvent(this.app.workspace.on('active-leaf-change', () => this.renderContext()));
+    // Switching files updates the context bar instantly and re-scopes the
+    // active panel (the Backlog's Project view follows the file you're in).
+    this.registerEvent(
+      this.app.workspace.on('active-leaf-change', () => {
+        this.renderContext();
+        this.scheduleRefresh();
+      }),
+    );
     this.renderContext();
     await this.renderActive();
     void this.tidy(); // catch up any hand-edited statuses into tasks/ ↔ done/
