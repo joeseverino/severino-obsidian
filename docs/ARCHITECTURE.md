@@ -1,13 +1,14 @@
 # Architecture
 
-`severino-obsidian` is the **editor-side face** of the Severino Labs system — the
-third surface over the vault, beside AI sessions and the shell CLIs. Its design
-is one sentence:
+`severino-obsidian` is the **editor-side face** of the Severino Labs system,
+beside AI sessions, shell CLIs, TUIs, and downstream views (HQ, the site,
+Bases). Its design is one sentence:
 
 > **The plugin owns nothing but the UI.** Every fact it shows is derived from an
 > owner, and every change it makes goes through that owner. It renders and it
-> delegates — it never computes, never validates, never writes a vault file
-> itself.
+> delegates — it never computes **system truth**, never validates canonical
+> data, and never writes vault data directly. (It does, of course, compute *UI*
+> state: context, filtering, command-palette display, detached-DOM rendering.)
 
 If a feature would re-implement something another part of the fleet already owns,
 it is out by design. That single rule is what keeps a growing plugin from
@@ -15,9 +16,11 @@ becoming a second, drifting source of truth.
 
 ---
 
-## The three owners it derives from
+## The owners it derives from
 
-The fleet already has the hard parts. The plugin is glue over three owners:
+The fleet already has the hard parts. The plugin is glue over three **primary**
+owners — the MCP, the site, and the brand kit — and reaches every other fleet
+tool (`site`, `tools`, `diagram`, `backlog`) only through the same CLI bridge:
 
 | Owner | What it owns | The plugin consumes it via |
 |---|---|---|
@@ -46,6 +49,11 @@ runToolJson<T>(bin, args, opts) → { ok, data?: T, error? }
 
 Two functions. Every panel, command, and modal is built on them. There is no
 second way the plugin reaches the rest of the system.
+
+**Failure is honest.** If an owner is unavailable — the MCP isn't installed, a
+CLI errors — the bridge surfaces the error and the panel renders it inline. The
+plugin never silently falls back to a reimplementation; a missing owner is a
+visible error, not a quietly wrong answer.
 
 ---
 
