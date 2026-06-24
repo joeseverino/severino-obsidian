@@ -16,7 +16,8 @@ becoming a second, drifting source of truth.
 
 ![The plugin derives through one bridge into three fleet owners](diagrams/architecture.png)
 
-<!-- Source: diagrams/architecture.mmd — re-render with `diagram docs/diagrams/architecture.mmd` -->
+<sup>Diagram source: [`docs/diagrams/architecture.mmd`](./diagrams/architecture.mmd),
+pre-rendered with [`diagram`](https://github.com/joeseverino/tools/blob/main/bin/diagram).</sup>
 
 Everything crosses the same seam: the UI derives through `exec.ts` at runtime, or
 consumes an owner's source through an esbuild alias at build. There is no fourth
@@ -32,9 +33,9 @@ tool (`site`, `tools`, `diagram`, `backlog`) only through the same CLI bridge:
 
 | Owner | What it owns | The plugin consumes it via |
 |---|---|---|
-| **`severino-vault-mcp`** (the MCP) | the vault brain — all task logic, the frontmatter schema, search, vault state, the one atomic writer | shells out to its **CLI subcommands** (below) |
-| **`jseverino.com`** (the site) | markdown→HTML rendering (incl. the block DSL), `base.css`, the publish contract | esbuild **aliases** bundle the real files at build time |
-| **`severino-brand`** (the brand kit) | the identity — tokens, the JS monogram mark | the mark is bundled (`@site/brand-mark`); brand vars ride in via the site's `base.css` |
+| **[`severino-vault-mcp`](https://github.com/joeseverino/severino-vault-mcp)** (the MCP) | the vault brain — all task logic, the frontmatter schema, search, vault state, the one atomic writer | shells out to its **CLI subcommands** (below) |
+| **[`jseverino.com`](https://github.com/joeseverino/jseverino.com)** (the site) | markdown→HTML rendering (incl. the block DSL), `base.css`, the publish contract | esbuild **aliases** bundle the real files at build time |
+| **[`severino-brand`](https://github.com/joeseverino/severino-brand)** (the brand kit) | the identity — tokens, the JS monogram mark | the mark is bundled (`@site/brand-mark`); brand vars ride in via the site's `base.css` |
 
 Nothing here is re-implemented. The renderer is imported, not forked. The schema
 enums come from `schema --json`, not a hardcoded list. The logo is the kit's
