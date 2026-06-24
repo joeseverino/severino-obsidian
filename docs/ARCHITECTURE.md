@@ -14,6 +14,14 @@ If a feature would re-implement something another part of the fleet already owns
 it is out by design. That single rule is what keeps a growing plugin from
 becoming a second, drifting source of truth.
 
+![The plugin derives through one bridge into three fleet owners](diagrams/architecture.png)
+
+<!-- Source: diagrams/architecture.mmd — re-render with `diagram docs/diagrams/architecture.mmd` -->
+
+Everything crosses the same seam: the UI derives through `exec.ts` at runtime, or
+consumes an owner's source through an esbuild alias at build. There is no fourth
+arrow — no path where the plugin computes system truth on its own.
+
 ---
 
 ## The owners it derives from
@@ -116,6 +124,9 @@ Three properties make it feel native and stay clean:
 - **Context-aware.** A thin context bar reflects the active file — a writeup gets
   an *Open preview* button, a project doc gets its launch buttons. The Backlog
   panel scopes to the project you're in (with a Project/All toggle).
+
+  ![The Backlog panel scoped to the active project](images/cockpit-backlog-project-scope.png)
+
 - **No-flash rendering.** A panel builds into a detached node and is swapped in
   atomically, so it never blanks while its `runToolJson` call resolves.
 - **Quiet auto-refresh.** It re-renders on vault changes (debounced) and only

@@ -1,0 +1,23 @@
+flowchart TB
+    subgraph editor["Obsidian — the only thing this repo owns"]
+        cockpit["Cockpit ItemView<br/>Backlog · Projects · Writeups · Vault"]
+        cmds["Command surface<br/>src/commands.mjs"]
+        modals["Modals<br/>New task · Promote · Relations"]
+        preview["Writeup preview<br/>sandboxed iframe"]
+    end
+
+    bridge["src/exec.ts — the one bridge<br/>runTool · runToolJson"]
+
+    cockpit --> bridge
+    cmds --> bridge
+    modals --> bridge
+
+    subgraph owners["Fleet owners — single sources of truth"]
+        mcp["severino-vault-mcp<br/>task logic · schema · search · the one writer"]
+        site["jseverino.com<br/>renderWriteupHtml · base.css"]
+        brand["severino-brand<br/>tokens · mark.svg"]
+    end
+
+    bridge -->|"CLI subcommands → JSON, at runtime"| mcp
+    preview -->|"esbuild alias, at build"| site
+    cockpit -.->|"bundled, at build"| brand
