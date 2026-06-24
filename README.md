@@ -11,9 +11,9 @@ becoming a second source of truth. The full design is in
 
 | Concern | Owner (single source of truth) | How the plugin uses it |
 |---|---|---|
-| task logic, schema, search, the one writer | `severino-vault-mcp` (the MCP) | shells out to its CLI subcommands |
-| markdown→HTML + the `::figure`/`::table`/`::terminal` DSL | `jseverino.com/src/lib/markdown.ts` | imports `renderWriteupHtml` (esbuild alias) |
-| brand tokens + writeup CSS + the JS mark | `severino-brand` → site `base.css` / `mark.svg` | bundled from source at build time |
+| task logic, schema, search, the one writer | [`severino-vault-mcp`](https://github.com/joeseverino/severino-vault-mcp) (the MCP) | shells out to its CLI subcommands |
+| markdown→HTML + the `::figure`/`::table`/`::terminal` DSL | [`jseverino.com`](https://github.com/joeseverino/jseverino.com)`/src/lib/markdown.ts` | imports `renderWriteupHtml` (esbuild alias) |
+| brand tokens + writeup CSS + the JS mark | [`severino-brand`](https://github.com/joeseverino/severino-brand) → site `base.css` / `mark.svg` | bundled from source at build time |
 
 If a feature would re-implement an owner's piece, it's out by design.
 
@@ -46,6 +46,31 @@ If a feature would re-implement an owner's piece, it's out by design.
   `jseverino.com` will, using the site's own renderer + `base.css`.
 - **Publish gate**, **asset doctor**, **graphics render**, **schema check**,
   **sync to site**, **DSL inserts**, **open on site / copy slug**.
+
+## Screenshots
+
+The cockpit, scoped to the project you're in — open work plus a *Shipped (7d)*
+feed, all derived live from the MCP:
+
+![The Cockpit backlog panel, scoped to a project](docs/images/cockpit-backlog.png)
+
+| Projects — open counts + launch buttons | Writeups — drafts and published |
+|---|---|
+| ![Projects panel](docs/images/cockpit-projects.png) | ![Writeups panel](docs/images/cockpit-writeups.png) |
+
+| New task (MCP-validated) | Promote an inbox note to a task |
+|---|---|
+| ![New task modal](docs/images/new-task-modal.png) | ![Promote note modal](docs/images/promote-note-modal.png) |
+
+The **site-accurate writeup preview** — the active note rendered exactly as
+`jseverino.com` will, using the site's own renderer and `base.css`:
+
+![Site-accurate writeup preview](docs/images/writeup-site-preview.png)
+
+The same `task-list` the cockpit reads, as the native `Backlog.base` board —
+close a task anywhere and all faces agree:
+
+![The native Backlog.base board](docs/images/backlog-board.png)
 
 ## Quick start
 

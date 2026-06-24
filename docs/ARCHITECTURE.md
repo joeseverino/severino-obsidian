@@ -14,6 +14,15 @@ If a feature would re-implement something another part of the fleet already owns
 it is out by design. That single rule is what keeps a growing plugin from
 becoming a second, drifting source of truth.
 
+![The plugin derives through one bridge into three fleet owners](diagrams/architecture.png)
+
+<sup>Diagram source: [`docs/diagrams/architecture.mmd`](./diagrams/architecture.mmd),
+pre-rendered with [`diagram`](https://github.com/joeseverino/tools/blob/main/bin/diagram).</sup>
+
+Everything crosses the same seam: the UI derives through `exec.ts` at runtime, or
+consumes an owner's source through an esbuild alias at build. There is no fourth
+arrow — no path where the plugin computes system truth on its own.
+
 ---
 
 ## The owners it derives from
@@ -24,9 +33,9 @@ tool (`site`, `tools`, `diagram`, `backlog`) only through the same CLI bridge:
 
 | Owner | What it owns | The plugin consumes it via |
 |---|---|---|
-| **`severino-vault-mcp`** (the MCP) | the vault brain — all task logic, the frontmatter schema, search, vault state, the one atomic writer | shells out to its **CLI subcommands** (below) |
-| **`jseverino.com`** (the site) | markdown→HTML rendering (incl. the block DSL), `base.css`, the publish contract | esbuild **aliases** bundle the real files at build time |
-| **`severino-brand`** (the brand kit) | the identity — tokens, the JS monogram mark | the mark is bundled (`@site/brand-mark`); brand vars ride in via the site's `base.css` |
+| **[`severino-vault-mcp`](https://github.com/joeseverino/severino-vault-mcp)** (the MCP) | the vault brain — all task logic, the frontmatter schema, search, vault state, the one atomic writer | shells out to its **CLI subcommands** (below) |
+| **[`jseverino.com`](https://github.com/joeseverino/jseverino.com)** (the site) | markdown→HTML rendering (incl. the block DSL), `base.css`, the publish contract | esbuild **aliases** bundle the real files at build time |
+| **[`severino-brand`](https://github.com/joeseverino/severino-brand)** (the brand kit) | the identity — tokens, the JS monogram mark | the mark is bundled (`@site/brand-mark`); brand vars ride in via the site's `base.css` |
 
 Nothing here is re-implemented. The renderer is imported, not forked. The schema
 enums come from `schema --json`, not a hardcoded list. The logo is the kit's
@@ -116,6 +125,9 @@ Three properties make it feel native and stay clean:
 - **Context-aware.** A thin context bar reflects the active file — a writeup gets
   an *Open preview* button, a project doc gets its launch buttons. The Backlog
   panel scopes to the project you're in (with a Project/All toggle).
+
+  ![The Backlog panel scoped to the active project](images/cockpit-backlog-project-scope.png)
+
 - **No-flash rendering.** A panel builds into a detached node and is swapped in
   atomically, so it never blanks while its `runToolJson` call resolves.
 - **Quiet auto-refresh.** It re-renders on vault changes (debounced) and only
