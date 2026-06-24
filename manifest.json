@@ -1,7 +1,7 @@
 {
   "id": "severino-obsidian",
   "name": "Severino Labs",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "minAppVersion": "1.5.0",
   "description": "Site-accurate writeup preview (using jseverino.com's own renderer) plus authoring power-ups: asset doctor, publish-gate badge, and block-DSL inserts.",
   "author": "Joe Severino",
