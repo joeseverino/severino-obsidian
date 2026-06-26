@@ -27,4 +27,5 @@ export const OBSIDIAN_COMMANDS = [
   { id: 'ask-the-vault', name: 'Ask the vault', effect: 'read', group: 'Vault', type: 'callback', summary: 'Quick-switcher over the MCP find_runbook ranking; opens the hit.', delegate: 'severino-vault-mcp find' },
   { id: 'edit-relations', name: 'Edit relations', effect: 'vault_write', group: 'Docs', type: 'callback', summary: 'Edit related_projects + status/sensitivity from the registry/schema; writes via the MCP.', delegate: 'severino-vault-mcp update-frontmatter' },
   { id: 'promote-note', name: 'Promote inbox note to a task', effect: 'vault_write', group: 'Backlog', type: 'callback', summary: 'Promote the active inbox note into a task (body preserved) via the MCP, then open it.', delegate: 'severino-vault-mcp promote-note' },
+  { id: 'autopopulate-daily', name: 'Daily note: populate brief region', effect: 'vault_write', group: 'Daily', type: 'callback', summary: 'Fill today’s daily-note brief region (work to ship, review-due, stale backlog, drafts) via `vault daily`. Also fires once when today’s daily note opens.', delegate: 'vault daily' },
 ];

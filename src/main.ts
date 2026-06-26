@@ -13,7 +13,7 @@ import { NewTaskModal, ProjectOption } from './new-task-modal';
 import { CockpitView, COCKPIT_VIEW_TYPE } from './cockpit-view';
 import { AskVaultModal } from './ask-vault-modal';
 import { RelationEditorModal } from './relation-editor-modal';
-import { runToolJson } from './exec';
+import { runTool, runToolJson } from './exec';
 
 const INDEXED_DIRS = ['01 Projects/', '02 Infrastructure/', '03 Runbooks/'];
 
@@ -61,6 +61,7 @@ export default class SeverinoObsidianPlugin extends Plugin {
       'ask-the-vault': () => new AskVaultModal(this.app, this.vaultPath()).open(),
       'edit-relations': () => void this.runRelationEditor(),
       'promote-note': () => void this.runPromoteNote(),
+      'autopopulate-daily': () => void this.runDailyPopulate(),
     };
     for (const spec of OBSIDIAN_COMMANDS) {
       if (spec.type === 'editor') {
@@ -90,6 +91,9 @@ export default class SeverinoObsidianPlugin extends Plugin {
     this.registerEvent(this.app.workspace.on('active-leaf-change', () => void this.onContextChange()));
     this.registerEvent(this.app.workspace.on('editor-change', () => debouncedRefresh()));
     this.registerEvent(this.app.metadataCache.on('changed', () => void this.updateGate()));
+    // Self-filling daily note: when TODAY's daily note opens, populate its brief
+    // region once. Old daily notes are never touched (would overwrite history).
+    this.registerEvent(this.app.workspace.on('file-open', (file) => this.maybeAutoPopulateDaily(file)));
 
     this.app.workspace.onLayoutReady(() => void this.onContextChange());
     // Warm the project list so the New-task modal opens instantly.
@@ -123,6 +127,34 @@ export default class SeverinoObsidianPlugin extends Plugin {
     const needsAttention = stale > 0 || inbox > 0;
     this.backlogEl.toggleClass('svo-gate-draft', needsAttention);
     this.backlogEl.toggleClass('svo-gate-published', !needsAttention);
+  }
+
+  // ── Daily note: populate the brief region ───────────────────────────────────
+  // The plugin only *triggers*; `vault daily` owns the render (one renderer,
+  // shared with the CLI) and the MCP's daily-write owns the atomic region write.
+  // Auto-fires once per session when today's daily note opens, so the note fills
+  // itself; also a manual command. Only today's note — re-opening an old daily
+  // note must never overwrite it with now's brief.
+  private readonly dailyDir = '00 Inbox/Daily Note';
+  private readonly dailyPopulated = new Set<string>();
+
+  private async runDailyPopulate(): Promise<void> {
+    const r = await runTool('vault', ['daily'], { cwd: this.vaultPath() });
+    if (r.ok) {
+      new Notice('Daily note: brief region updated');
+    } else {
+      const last = (r.stderr.trim().split('\n').pop() ?? '').trim();
+      new Notice(`Daily note: populate failed — ${last || 'see console'}`, 8000);
+    }
+  }
+
+  private maybeAutoPopulateDaily(file: TFile | null): void {
+    if (!(file instanceof TFile)) return;
+    const today = new Date().toISOString().slice(0, 10);
+    if (file.path !== `${this.dailyDir}/${today}.md`) return; // only today's note
+    if (this.dailyPopulated.has(today)) return; // once per session
+    this.dailyPopulated.add(today);
+    void this.runDailyPopulate();
   }
 
   // ── New task ───────────────────────────────────────────────────────────────
