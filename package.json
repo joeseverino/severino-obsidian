@@ -1,6 +1,6 @@
 {
   "name": "severino-obsidian",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
   "type": "module",
   "description": "Obsidian plugin suite for the Severino Labs vault: site-accurate writeup preview plus authoring power-ups, built on the site's own renderer.",
