@@ -156,6 +156,15 @@
       "paras": [],
       "examples": [],
       "delegates": "severino-vault-mcp promote-note"
+    },
+    {
+      "name": "autopopulate-daily",
+      "summary": "Daily note: populate brief region — Fill today’s daily-note brief region (work to ship, review-due, stale backlog, drafts) via `vault daily`. Also fires once when today’s daily note opens.",
+      "args": [],
+      "effect": "vault_write",
+      "paras": [],
+      "examples": [],
+      "delegates": "vault daily"
     }
   ]
 }

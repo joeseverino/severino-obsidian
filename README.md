@@ -157,6 +157,7 @@ Severino Labs Obsidian plugin — in-editor command surface.
 | `ask-the-vault` | `read` | Ask the vault — Quick-switcher over the MCP find_runbook ranking; opens the hit. |
 | `edit-relations` | `vault_write` | Edit relations — Edit related_projects + status/sensitivity from the registry/schema; writes via the MCP. |
 | `promote-note` | `vault_write` | Promote inbox note to a task — Promote the active inbox note into a task (body preserved) via the MCP, then open it. |
+| `autopopulate-daily` | `vault_write` | Daily note: populate brief region — Fill today’s daily-note brief region (work to ship, review-due, stale backlog, drafts) via `vault daily`. Also fires once when today’s daily note opens. |
 
 <!-- END GENERATED: cli-reference -->
 
