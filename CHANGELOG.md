@@ -8,6 +8,13 @@ Two axes, kept distinct:
   (currently `4`, schema `cordon-v4.json`). Tracked separately because a project
   can stay on the starter while the contract revs.
 
+## [1.1.0](https://github.com/joeseverino/severino-obsidian/compare/v1.0.0...v1.1.0) (2026-06-26)
+
+
+### Features
+
+* self-filling daily note — populate brief region on open ([#8](https://github.com/joeseverino/severino-obsidian/issues/8)) ([e0812b4](https://github.com/joeseverino/severino-obsidian/commit/e0812b4563ca01bbc4df95e8591180bf34511332))
+
 ## 1.0.0 (2026-06-24)
 
 
