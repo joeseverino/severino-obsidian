@@ -4,15 +4,19 @@
 # cordon.checks.json — every check is declared as data there, so local and CI
 # can't drift. This wrapper is identical in every cordon repo; what differs is
 # only cordon.checks.json. Pass engine flags through, e.g. `scripts/check.sh --json`.
+#
+# Engine resolution, fastest first: a local cordon checkout (dev machines),
+# the repo's pinned cordon-spec devDependency, else the published package via
+# npx — cordon is on npm now, so a fresh machine needs no download step.
 set -e
 export CORDON_HOME="${CORDON_HOME:-${ASSETS_HOME:-$HOME/Documents/Code/Assets}/cordon}"
-if [ ! -f "$CORDON_HOME/checks/run.mjs" ]; then
-  echo "cordon not found (looked in: $CORDON_HOME)." >&2
-  echo "One-time setup:  curl -fsSL https://raw.githubusercontent.com/joeseverino/cordon/main/install.sh | bash" >&2
-  echo "Or point CORDON_HOME at an existing cordon checkout." >&2
-  exit 1
-fi
 root="$(cd "$(dirname "$0")/.." && pwd)"
 # The CI gate passes --ci; the engine detects CI on its own, so drop it.
 [ "${1:-}" = "--ci" ] && shift
-exec node "$CORDON_HOME/checks/run.mjs" --root "$root" "$@"
+if [ -f "$CORDON_HOME/checks/run.mjs" ]; then
+  exec node "$CORDON_HOME/checks/run.mjs" --root "$root" "$@"
+fi
+if [ -f "$root/node_modules/cordon-spec/checks/run.mjs" ]; then
+  exec node "$root/node_modules/cordon-spec/checks/run.mjs" --root "$root" "$@"
+fi
+exec npx -y cordon-spec@1 cordon-checks --root "$root" "$@"
