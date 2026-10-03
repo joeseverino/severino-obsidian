@@ -143,9 +143,9 @@ Severino Labs Obsidian plugin — in-editor command surface.
 | `open-site-preview` | `read` | Site preview: open pane — Open the site-accurate writeup preview pane. |
 | `publish-gate` | `read` | Publish gate: check this writeup — Run the MCP validate-writeup gate (draft mode). |
 | `asset-doctor` | `read` | Asset doctor: check images for orphans + missing — Report orphaned and missing writeup images. |
-| `insert-figure` | `local_write` | Insert figure block — Insert a ::figure DSL skeleton at the cursor. |
-| `insert-table` | `local_write` | Insert table block — Insert a ::table DSL skeleton at the cursor. |
-| `insert-terminal` | `local_write` | Insert terminal block — Insert a ::terminal DSL skeleton at the cursor. |
+| `insert-figure` | `local_write` | Insert figure block — Insert a :::figure block skeleton at the cursor. |
+| `insert-table` | `local_write` | Insert table block — Insert a :::table block skeleton at the cursor. |
+| `insert-terminal` | `local_write` | Insert terminal block — Insert a terminal fence skeleton at the cursor. |
 | `graphics-status` | `read` | Graphics: status (unrendered sources) — List graphics sources vs rendered images. |
 | `graphics-render` | `local_write` | Graphics: render unrendered into images/ — Render graphics via brand/diagram into images/. |
 | `sync-to-site` | `vault_write` | Sync writeups to the site repo — Run `site sync` (vault → site repo). |
