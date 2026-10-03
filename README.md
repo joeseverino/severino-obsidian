@@ -141,7 +141,7 @@ Severino Labs Obsidian plugin — in-editor command surface.
 | command | effect | summary |
 |---|---|---|
 | `open-site-preview` | `read` | Site preview: open pane — Open the site-accurate writeup preview pane. |
-| `publish-gate` | `read` | Publish gate: check this writeup — Run the MCP validate-writeup gate (draft mode). |
+| `publish-gate` | `read` | Publish gate: check this writeup — Run the site publish gate (draft mode). |
 | `asset-doctor` | `read` | Asset doctor: check images for orphans + missing — Report orphaned and missing writeup images. |
 | `insert-figure` | `local_write` | Insert figure block — Insert a :::figure block skeleton at the cursor. |
 | `insert-table` | `local_write` | Insert table block — Insert a :::table block skeleton at the cursor. |
@@ -154,7 +154,7 @@ Severino Labs Obsidian plugin — in-editor command surface.
 | `copy-slug` | `read` | Copy writeup slug — Copy the active writeup slug to the clipboard. |
 | `new-task` | `vault_write` | New task — Create a task (title + project picker) via the MCP, then open it. |
 | `open-cockpit` | `read` | Cockpit: open — Open the fleet cockpit panel (backlog + stale debt, derived from the MCP). |
-| `ask-the-vault` | `read` | Ask the vault — Quick-switcher over the MCP find_runbook ranking; opens the hit. |
+| `ask-the-vault` | `read` | Ask the vault — Quick-switcher over the vault MCP find ranking; opens the hit. |
 | `edit-relations` | `vault_write` | Edit relations — Edit related_projects + status/sensitivity from the registry/schema; writes via the MCP. |
 | `promote-note` | `vault_write` | Promote inbox note to a task — Promote the active inbox note into a task (body preserved) via the MCP, then open it. |
 | `autopopulate-daily` | `vault_write` | Daily note: populate brief region — Fill today’s daily-note brief region (work to ship, review-due, stale backlog, drafts) via `vault daily`. Also fires once when today’s daily note opens. |

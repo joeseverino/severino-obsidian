@@ -23,12 +23,12 @@
     },
     {
       "name": "publish-gate",
-      "summary": "Publish gate: check this writeup — Run the MCP validate-writeup gate (draft mode).",
+      "summary": "Publish gate: check this writeup — Run the site publish gate (draft mode).",
       "args": [],
       "effect": "read",
       "paras": [],
       "examples": [],
-      "delegates": "severino-vault-mcp validate-writeup --draft"
+      "delegates": "site validate --draft"
     },
     {
       "name": "asset-doctor",
@@ -132,7 +132,7 @@
     },
     {
       "name": "ask-the-vault",
-      "summary": "Ask the vault — Quick-switcher over the MCP find_runbook ranking; opens the hit.",
+      "summary": "Ask the vault — Quick-switcher over the vault MCP find ranking; opens the hit.",
       "args": [],
       "effect": "read",
       "paras": [],
