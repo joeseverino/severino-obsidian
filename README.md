@@ -12,7 +12,7 @@ becoming a second source of truth. The full design is in
 | Concern | Owner (single source of truth) | How the plugin uses it |
 |---|---|---|
 | task logic, schema, search, the one writer | [`severino-vault-mcp`](https://github.com/joeseverino/severino-vault-mcp) (the MCP) | shells out to its CLI subcommands |
-| markdown→HTML + the `::figure`/`::table`/`::terminal` DSL | [`jseverino.com`](https://github.com/joeseverino/jseverino.com)`/src/lib/markdown.ts` | imports `renderWriteupHtml` (esbuild alias) |
+| markdown→HTML + the `:::figure`/`:::table` directives and `terminal` fences | [`jseverino.com`](https://github.com/joeseverino/jseverino.com)`/src/lib/markdown/index.ts` | runs the site's Sätteri `processorOptions` (esbuild alias) |
 | brand tokens + writeup CSS + the JS mark | [`severino-brand`](https://github.com/joeseverino/severino-brand) → site `base.css` / `mark.svg` | bundled from source at build time |
 
 If a feature would re-implement an owner's piece, it's out by design.
@@ -82,6 +82,10 @@ npm run build        # bundles into <vault>/.obsidian/plugins/severino-obsidian/
 SITE_DIR=/path/to/jseverino.com VAULT_DIR="/path/to/Severino Labs" npm run build
 ```
 
+`SITE_DIR` defaults to `~/Code/Projects/jseverino.com` and needs `npm ci` run in
+it: the build bundles the site's renderer and copies Sätteri's native addon for
+this Mac (`satteri.node`) beside `main.js`.
+
 Then in Obsidian: **Settings → Community plugins → enable "Severino Labs"**, and
 open the cockpit from the ribbon. The CLIs it shells out to
 (`severino-vault-mcp`, `site`, `brand`, `diagram`) must be on `~/.local/bin`.
@@ -91,6 +95,7 @@ open the cockpit from the ribbon. The CLIs it shells out to
 ```sh
 npm run dev             # watch-rebuild into the vault
 npm run typecheck       # tsc --noEmit
+npm run preview:render <slug>   # screenshot the Site preview of a vault writeup to /tmp
 npm run commands:emit   # regenerate the cordon command contract after editing src/commands.mjs
 ```
 

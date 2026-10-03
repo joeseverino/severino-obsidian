@@ -34,7 +34,7 @@ tool (`site`, `tools`, `diagram`, `backlog`) only through the same CLI bridge:
 | Owner | What it owns | The plugin consumes it via |
 |---|---|---|
 | **[`severino-vault-mcp`](https://github.com/joeseverino/severino-vault-mcp)** (the MCP) | the vault brain — all task logic, the frontmatter schema, search, vault state, the one atomic writer | shells out to its **CLI subcommands** (below) |
-| **[`jseverino.com`](https://github.com/joeseverino/jseverino.com)** (the site) | markdown→HTML rendering (incl. the block DSL), `base.css`, the publish contract | esbuild **aliases** bundle the real files at build time |
+| **[`jseverino.com`](https://github.com/joeseverino/jseverino.com)** (the site) | markdown→HTML rendering (Sätteri + the directive vocabulary), the writeup body transforms, `base.css`, the publish contract | esbuild **aliases** bundle the real files at build time |
 | **[`severino-brand`](https://github.com/joeseverino/severino-brand)** (the brand kit) | the identity — tokens, the JS monogram mark | the mark is bundled (`@site/brand-mark`); brand vars ride in via the site's `base.css` |
 
 Nothing here is re-implemented. The renderer is imported, not forked. The schema
@@ -165,14 +165,45 @@ via aliases and writes the plugin straight into the vault's
 `.obsidian/plugins/severino-obsidian/`:
 
 ```
-@site/markdown    → jseverino.com/src/lib/markdown.ts   (the renderer)
-@site/base-css    → jseverino.com/src/styles/base.css   (text loader)
-@site/brand-mark  → public/assets/brand/mark.svg        (the JS monogram)
-@site/inter-font  → the Inter woff2                      (dataurl loader)
+@site/markdown    → src/lib/markdown/index.ts              (Sätteri processorOptions)
+@site/satteri     → node_modules/satteri                   (the compiler its plugins target)
+@site/writeup-body → src/lib/writeup-body.ts  (stripArticleChrome, stripRepeatedDescription)
+@site/base-css    → src/styles/base.css                    (@imports bundled, as text)
+@site/web-styles  → src/lib/web-styles.ts                  (base.css + brand vars + font)
+@site/frontmatter → src/lib/frontmatter.ts
+@site/brand-mark  → public/assets/brand/mark.svg           (the JS monogram)
+@site/inter-font  → the Inter woff2                         (dataurl loader)
 ```
 
-So even the bundled assets are *consumed from their owner*, not copied into this
-repo. Edit `base.css` or the brand mark at the source and a rebuild picks it up.
+`SITE_DIR` defaults to `~/Code/Projects/jseverino.com`. So even the bundled
+assets are *consumed from their owner*, not copied into this repo. Edit
+`base.css` or a renderer plugin at the source and a rebuild picks it up.
+
+### The preview renderer
+
+The preview runs the body through the same steps the site does: the sync's
+transforms (drop a repeated description, the leading H1, lede, and image), then
+Sätteri with the site's `processorOptions` and a `/writeups/<slug>/` file URL
+(so writeup-only rules such as link-only paragraphs as buttons apply).
+
+The site compiles `.mdx`; the preview uses `markdownToHtml` with the same
+plugins, which yields the same markup. Raw HTML is where they differ: MDX parses
+it as JSX under the content guard, `markdownToHtml` passes it through verbatim.
+So the preview also compiles the body with `mdxToJs`, as `site validate` does,
+and shows any error the build would hit above the render. Images are plain
+`<img>` resolved to vault resource paths where the site uses Astro's `<Picture>`.
+
+Sätteri is a Rust compiler with two bindings: a native N-API addon and a
+threaded WASI build for browsers. The plugin uses the native addon. The WASI
+build needs `SharedArrayBuffer` (cross-origin isolation, which Obsidian's
+renderer doesn't have), a Worker loaded by URL, and async initialisation, none
+of which fit a synchronous CommonJS plugin bundle. Obsidian's renderer has Node
+`require` and its hardened runtime allows unsigned libraries, so an esbuild
+plugin replaces Sätteri's `#binding` import with a lazy `require` of the addon
+(`src/satteri-binding.ts`), and the build copies the addon for this Mac beside
+`main.js` as `satteri.node`. `npm run preview:render <slug>` bundles the same
+way and screenshots a real vault writeup, so the preview can be checked outside
+Obsidian.
 
 ---
 
@@ -186,7 +217,7 @@ repo. Edit `base.css` or the brand mark at the source and a rebuild picks it up.
 - **One schema.** Enum options come from `schema --json` (the same source HQ and
   the site validate against) — never a list the plugin maintains.
 - **One renderer, one identity.** The writeup preview is the site's own
-  `renderWriteupHtml` + `base.css`; the logo is the brand kit's mark.
+  Sätteri `processorOptions` + `base.css`; the logo is the brand kit's mark.
 
 The plugin is the *interface* to the system, not a part of the system's logic.
 That is the whole design, and it's what lets it grow without becoming a liability.

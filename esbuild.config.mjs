@@ -1,14 +1,14 @@
-// Bundle the plugin into the vault's plugin dir. The two things that make this
-// plugin "own almost nothing" are the aliases below: the markdown→HTML renderer
-// and the writeup CSS are imported straight from their real owners (the site and
-// the brand-token-synced base.css), never reimplemented here. The site/vault
-// resolution + alias map live in scripts/site-paths.mjs (shared with the
-// preview-render harness), so they're authored once.
+// Bundle the plugin into the vault's plugin dir. What makes this plugin "own
+// almost nothing" is the alias map: the site's Sätteri processorOptions, writeup
+// body transforms, base.css, and font are imported straight from their real owners,
+// never reimplemented here. The site/vault resolution, alias map, and esbuild
+// plugins live in scripts/site-paths.mjs (shared with the preview-render
+// harness), so they're authored once.
 import esbuild from 'esbuild';
 import path from 'node:path';
 import fs from 'node:fs';
 import process from 'node:process';
-import { repoRoot, vaultDir, sitePaths, siteLoader, assertSitePaths } from './scripts/site-paths.mjs';
+import { repoRoot, vaultDir, sitePaths, siteLoader, sitePlugins, satteriNative, assertSitePaths } from './scripts/site-paths.mjs';
 
 const watch = process.argv.includes('--watch');
 
@@ -17,11 +17,13 @@ assertSitePaths();
 const outDir = path.join(vaultDir, '.obsidian/plugins/severino-obsidian');
 fs.mkdirSync(outDir, { recursive: true });
 
-// Static assets that ship beside main.js.
+// Static assets that ship beside main.js, plus Sätteri's native addon for
+// this machine (src/satteri-binding.ts requires it on first render).
 function copyStatics() {
   for (const name of ['manifest.json', 'styles.css', 'versions.json']) {
     fs.copyFileSync(path.join(repoRoot, name), path.join(outDir, name));
   }
+  fs.copyFileSync(satteriNative, path.join(outDir, 'satteri.node'));
 }
 
 const banner = `/* severino-obsidian — generated bundle. Source: Projects/severino-obsidian. Do not edit here. */`;
@@ -39,6 +41,7 @@ const options = {
   // The whole point: pull rendering + styles from their owners.
   alias: sitePaths,
   loader: siteLoader,
+  plugins: sitePlugins(),
   external: [
     'obsidian',
     'electron',

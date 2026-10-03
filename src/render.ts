@@ -1,11 +1,19 @@
-// The renderer glue. The plugin owns NONE of the markdown→HTML logic or the
-// styling: it calls the site's own renderWriteupHtml, injects the site's own
-// styles via previewStyles (base.css + brand vars + font — the "load BOTH"
-// contract owned by the site), and reproduces the article page STRUCTURE that
-// portfolio/[slug]/index.astro emits so those styles actually apply. All inputs
-// come from the real owners via esbuild aliases (see esbuild.config.mjs).
+// The renderer glue. The plugin owns none of the markdown→HTML logic or the
+// styling: it runs the site's own Sätteri processorOptions, the site's own
+// writeup body transforms (stripRepeatedDescription + stripArticleChrome, as the sync
+// applies them), injects the site's styles via previewStyles (base.css + brand
+// vars + font), and reproduces the article page structure that
+// portfolio/[slug]/index.astro emits so those styles apply. All inputs come
+// from the real owners via esbuild aliases (scripts/site-paths.mjs).
 //
-import { renderWriteupHtml } from '@site/markdown';
+// The site compiles .mdx; the preview renders the same body with
+// markdownToHtml and the same plugins, which yields the same markup. Only raw
+// HTML differs: MDX parses it as JSX under the content guard, markdownToHtml
+// passes it through verbatim. So the body is also compiled with mdxToJs, as
+// `site validate` does, and any error the build would hit is shown above it.
+import { markdownToHtml, mdxToJs } from '@site/satteri';
+import { processorOptions } from '@site/markdown';
+import { stripArticleChrome, stripRepeatedDescription } from '@site/writeup-body';
 import { parseFrontmatter } from '@site/frontmatter';
 import { previewStyles } from '@site/web-styles';
 import siteBaseCss from '@site/base-css';
@@ -27,7 +35,7 @@ const escapeHtml = (s: string): string =>
 
 const escapeAttr = (s: string): string => escapeHtml(s).replace(/"/g, '&quot;');
 
-const escapeRegExp = (s: string): string => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const firstLine = (err: unknown): string => String(err instanceof Error ? err.message : err).split('\n')[0] ?? '';
 
 // "2026-06-17" → "JUNE 17, 2026" (matches the article-date styling).
 function formatDate(raw?: string): string {
@@ -43,16 +51,42 @@ function formatDate(raw?: string): string {
 const titleCase = (slug: string): string =>
   slug.replace(/[-_]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 
-// Point site asset URLs (/assets/writeups/<slug>/…) back at local vault files.
-function rewriteAssets(html: string, slug: string, resolve: (rel: string) => string | null): string {
-  const base = `/assets/writeups/${slug}/`;
-  return html.replace(
-    new RegExp(`((?:src|href)=")${escapeRegExp(base)}([^"]+)(")`, 'g'),
-    (whole, pre: string, rel: string, post: string) => {
-      const local = resolve(rel);
-      return local ? `${pre}${local}${post}` : whole;
-    },
-  );
+const isLocalRef = (url: string): boolean => !/^(?:[a-z][a-z\d+.-]*:|\/|#)/i.test(url);
+
+const decode = (s: string): string => {
+  try {
+    return decodeURIComponent(s);
+  } catch {
+    return s;
+  }
+};
+
+// Point document-relative refs (./images/x.png) at local vault files. The site
+// serves these through Astro's <Picture>; a plain <img> is enough here.
+function rewriteAssets(html: string, resolve: (rel: string) => string | null): string {
+  return html.replace(/((?:src|href)=")([^"]+)(")/g, (whole, pre: string, url: string, post: string) => {
+    if (!isLocalRef(url)) return whole;
+    const local = resolve(decode(url.replace(/&amp;/g, '&')).replace(/^\.\//, ''));
+    return local ? `${pre}${escapeAttr(local)}${post}` : whole;
+  });
+}
+
+// The writeup body as the site renders it, plus the build's verdict on it.
+export function renderBody(markdown: string, slug: string): { html: string; issue: string | null } {
+  const { data, content } = parseFrontmatter(markdown);
+  const body = stripArticleChrome(stripRepeatedDescription(content, data.description));
+  const options = { ...processorOptions, fileURL: new URL(`file:///writeups/${encodeURIComponent(slug)}/index.mdx`) };
+  let issue: string | null = null;
+  try {
+    mdxToJs(body, options);
+  } catch (err) {
+    issue = firstLine(err);
+  }
+  try {
+    return { html: markdownToHtml(body, options).html, issue };
+  } catch (err) {
+    return { html: '', issue: issue ?? firstLine(err) };
+  }
 }
 
 export function buildPreviewDoc(input: RenderInput): string {
@@ -60,13 +94,16 @@ export function buildPreviewDoc(input: RenderInput): string {
 
   let body: string;
   try {
-    body = renderWriteupHtml(parseFrontmatter(markdown).content, slug);
+    const { html, issue } = renderBody(markdown, slug);
+    const banner = issue
+      ? `<p class="svo-issue">The site build would reject this writeup: ${escapeHtml(issue)}</p>`
+      : '';
+    body = banner + rewriteAssets(html, resolveAsset);
   } catch (err) {
     body = `<pre class="svo-error">Preview failed to render:\n${escapeHtml(String(err))}</pre>`;
   }
-  body = rewriteAssets(body, slug, resolveAsset);
 
-  // Article header / hero / tags — same structure as portfolio/[slug]/index.astro.
+  // Article header / hero / tags: the same structure as portfolio/[slug]/index.astro.
   const heroSrc = coverImage ? resolveAsset(coverImage.replace(/^\.?\//, '')) : null;
   const hero = heroSrc
     ? `<figure class="article-hero"><img src="${escapeAttr(heroSrc)}" alt="${escapeAttr(coverAlt ?? '')}"></figure>`
@@ -83,15 +120,15 @@ export function buildPreviewDoc(input: RenderInput): string {
 
   const head = [
     // The site's "load BOTH" bundle: base.css + brand vars + a resolvable Inter
-    // @font-face (base.css's font URL is absolute and can't resolve in the iframe,
-    // so we hand previewStyles the inlined woff2). One call, owned by the site, so
-    // the brand vars can never be forgotten here.
+    // @font-face (base.css's font URL is absolute and can't resolve in the
+    // iframe, so previewStyles gets the inlined woff2).
     previewStyles({ baseCss: siteBaseCss, fontUrl: interFontUrl }),
     '<style>',
     '  html { color-scheme: light; }',
     '  body { margin: 0; background: var(--color-bg, #fff); }',
     '  main.article { padding: 2rem var(--gutter, 1.5rem) 3rem; }',
     '  .svo-error { white-space: pre-wrap; color: #991b1b; font-family: var(--font-mono, monospace); padding: 1rem; }',
+    '  .svo-issue { color: #991b1b; background: #fef2f2; border: 1px solid #fecaca; border-radius: 6px; padding: .75rem 1rem; font-size: .9rem; }',
     '</style>',
   ].join('\n');
 

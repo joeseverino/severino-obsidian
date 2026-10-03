@@ -1,5 +1,6 @@
 import { Plugin, Notice, Editor, TFile, FileSystemAdapter, debounce } from 'obsidian';
 import { SitePreviewView, PREVIEW_VIEW_TYPE } from './preview-view';
+import { setSatteriBinding, SATTERI_ADDON } from './satteri-binding';
 import { getActiveWriteup } from './writeup';
 import { assetReport } from './assets';
 import { insertBlock, BlockKind } from './dsl';
@@ -30,6 +31,8 @@ export default class SeverinoObsidianPlugin extends Plugin {
 
   async onload(): Promise<void> {
     // ── Flagship: the site preview pane ──────────────────────────────────────
+    // The renderer's native addon ships beside main.js (esbuild.config.mjs).
+    if (this.manifest.dir) setSatteriBinding(`${this.vaultPath()}/${this.manifest.dir}/${SATTERI_ADDON}`);
     this.registerView(PREVIEW_VIEW_TYPE, (leaf) => new SitePreviewView(leaf));
     this.registerView(
       COCKPIT_VIEW_TYPE,
