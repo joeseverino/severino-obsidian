@@ -4,13 +4,8 @@ import { runTool, runToolJson, ToolResult } from './exec';
 // AI sessions use. The plugin is a third face of one code path — it never
 // reimplements validation, the catalog, or sync.
 
-const MCP = 'severino-vault-mcp';
 
-function mcpEnv(vaultRoot: string): Record<string, string> {
-  return { SVMC_VAULT_PATH: vaultRoot };
-}
-
-// ── Publish gate (consumes `severino-vault-mcp validate-writeup`, added in A) ──
+// ── Publish gate (consumes `site validate --json`) ──
 
 export interface GateReport {
   ok: boolean;
@@ -24,12 +19,8 @@ export interface GateReport {
 
 interface RawValidate {
   ok?: boolean;
-  error?: string;
-  blockers?: string[];
-  missing_tech_slugs?: string[];
-  missing_images?: string[];
-  unresolved_refs?: string[];
-  nits?: string[];
+  documents?: { slug: string; issues: string[] }[];
+  error?: { message?: string };
 }
 
 const emptyGate = (error: string): GateReport => ({
@@ -50,18 +41,12 @@ export async function syncToSite(vaultRoot: string): Promise<ToolResult> {
 }
 
 export async function gateWriteup(slug: string, vaultRoot: string, draft = true): Promise<GateReport> {
-  const args = ['validate-writeup', slug];
+  const args = ['validate', slug, '--json'];
   if (draft) args.push('--draft');
-  const res = await runToolJson<RawValidate>(MCP, args, { cwd: vaultRoot, env: mcpEnv(vaultRoot) });
+  const res = await runToolJson<RawValidate>('site', args, { cwd: vaultRoot, env: { VAULT_DIR: vaultRoot } });
   if (!res.ok || !res.data) return emptyGate(res.error ?? 'gate failed to run');
   const d = res.data;
-  if (d.error) return emptyGate(d.error);
-  return {
-    ok: d.ok === true,
-    blockers: d.blockers ?? [],
-    missingTechSlugs: d.missing_tech_slugs ?? [],
-    missingImages: d.missing_images ?? [],
-    unresolvedRefs: d.unresolved_refs ?? [],
-    nits: d.nits ?? [],
-  };
+  const blockers = (d.documents ?? []).flatMap((doc) => doc.issues);
+  if (!d.ok && blockers.length === 0) return emptyGate(d.error?.message ?? 'gate failed');
+  return { ok: d.ok === true, blockers, missingTechSlugs: [], missingImages: [], unresolvedRefs: [], nits: [] };
 }

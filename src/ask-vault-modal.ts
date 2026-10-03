@@ -13,7 +13,7 @@ interface FindResult {
   hits?: Hit[];
 }
 
-// Ask the vault: the MCP's `find_runbook` ranking, surfaced through Obsidian's
+// Ask the vault: the vault MCP's `find` ranking, surfaced through Obsidian's
 // own quick-switcher (SuggestModal). The MCP answers "how do I X"; this only
 // renders the menu and opens the hit. One owner (the MCP search), a native face.
 export class AskVaultModal extends SuggestModal<Hit> {
