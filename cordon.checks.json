@@ -1,5 +1,5 @@
 {
-  "$schema": "../../Assets/cordon/checks/config.schema.json",
+  "$schema": "https://raw.githubusercontent.com/joeseverino/cordon/main/checks/config.schema.json",
   "commands": [
     {
       "id": "typecheck",

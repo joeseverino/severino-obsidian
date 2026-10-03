@@ -26,6 +26,6 @@ jobs:
     permissions:
       contents: write
       pull-requests: write
-    uses: joeseverino/cordon/.github/workflows/cordon-release.yml@main
+    uses: joeseverino/cordon/.github/workflows/cordon-release.yml@v2
     with:
       release-type: node   # package.json is the version source; see header

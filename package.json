@@ -17,11 +17,14 @@
     "describe:write": "node bin/severino-obsidian --write"
   },
   "devDependencies": {
-    "@types/node": "^22.20.0",
-    "cordon-spec": "1.3.0",
-    "esbuild": "^0.24.0",
-    "markdown-it": "^14.1.0",
-    "obsidian": "^1.7.2",
-    "typescript": "^5.9.3"
-  }
+    "@types/node": "24.19.1",
+    "cordon-spec": "1.4.0",
+    "esbuild": "0.28.2",
+    "obsidian": "1.13.1",
+    "typescript": "7.0.2"
+  },
+  "engines": {
+    "node": ">=24.21.0"
+  },
+  "packageManager": "npm@11.19.0"
 }

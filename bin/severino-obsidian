@@ -8,9 +8,8 @@
 //   bin/severino-obsidian --check       exit 1 if the committed contract is stale
 
 import { readFile } from 'node:fs/promises';
+import { describeScripts, emitMain } from 'cordon-spec/emit';
 
-const CORDON = process.env.CORDON_HOME ?? `${process.env.HOME}/Documents/Code/Assets/cordon`;
-const { describeScripts, emitMain } = await import(`${CORDON}/emitters/node/index.mjs`);
 const pkg = JSON.parse(await readFile(new URL('../package.json', import.meta.url)));
 
 const spec = describeScripts(pkg, {
