@@ -4,7 +4,7 @@
 // from" is authored once, not twice.
 //
 // Overridable, mirroring brand/sync.mjs:
-//   SITE_DIR   the jseverino.com checkout      (default ~/Documents/Code/Projects/jseverino.com)
+//   SITE_DIR   the jseverino.com checkout      (default ~/Code/Projects/jseverino.com)
 //   VAULT_DIR  the Obsidian vault              (default ~/Documents/Code/Severino Labs)
 import path from 'node:path';
 import os from 'node:os';
@@ -15,7 +15,7 @@ export const repoRoot = path.resolve(path.dirname(new URL(import.meta.url).pathn
 
 export const siteDir = process.env.SITE_DIR
   ? path.resolve(process.env.SITE_DIR)
-  : path.resolve(os.homedir(), 'Documents/Code/Projects/jseverino.com');
+  : path.resolve(os.homedir(), 'Code/Projects/jseverino.com');
 
 export const vaultDir = process.env.VAULT_DIR
   ? path.resolve(process.env.VAULT_DIR)
@@ -23,11 +23,11 @@ export const vaultDir = process.env.VAULT_DIR
 
 // The owners the plugin imports instead of reimplementing.
 export const sitePaths = {
-  '@site/markdown': path.join(siteDir, 'src/lib/markdown.ts'),
+  '@site/markdown': path.join(siteDir, 'src/lib/markdown/index.ts'),
   '@site/base-css': path.join(siteDir, 'src/styles/base.css'),
-  '@site/brand': path.join(siteDir, 'src/lib/brand.mjs'),
-  '@site/web-styles': path.join(siteDir, 'src/lib/web-styles.mjs'),
-  '@site/frontmatter': path.join(siteDir, 'src/lib/frontmatter.mjs'),
+  '@site/brand': path.join(siteDir, 'src/lib/brand.ts'),
+  '@site/web-styles': path.join(siteDir, 'src/lib/web-styles.ts'),
+  '@site/frontmatter': path.join(siteDir, 'src/lib/frontmatter.ts'),
   '@site/inter-font': path.join(siteDir, 'public/assets/fonts/inter/inter-variable-latin.woff2'),
   '@site/brand-mark': path.join(siteDir, 'public/assets/brand/mark.svg'),
 };
@@ -38,7 +38,7 @@ export const siteLoader = { '.css': 'text', '.svg': 'text', '.woff2': 'dataurl' 
 const labels = {
   '@site/markdown': 'site renderer',
   '@site/base-css': 'site base.css',
-  '@site/brand': 'site brand.mjs',
+  '@site/brand': 'site brand.ts',
   '@site/frontmatter': 'site frontmatter helper',
   '@site/inter-font': 'Inter font',
 };

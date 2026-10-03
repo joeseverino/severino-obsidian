@@ -10,7 +10,8 @@
     "skipLibCheck": true,
     "isolatedModules": true,
     "noEmit": true,
-    "allowJs": false
+    "allowJs": false,
+    "types": ["node"]
   },
   "include": ["src"]
 }
