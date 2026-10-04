@@ -15,10 +15,10 @@ flowchart TB
 
     subgraph owners["Fleet owners — single sources of truth"]
         mcp["severino-vault-mcp<br/>task logic · schema · search · the one writer"]
-        site["jseverino.com<br/>site render · base.css"]
+        site["jseverino.com<br/>site render: layout · styles"]
         brand["severino-brand<br/>tokens · mark.svg"]
     end
 
     bridge -->|"CLI subcommands → JSON, at runtime"| mcp
-    bridge -->|"site render → HTML, at runtime"| site
+    bridge -->|"site render → styled page, at runtime"| site
     cockpit -.->|"bundled, at build"| brand

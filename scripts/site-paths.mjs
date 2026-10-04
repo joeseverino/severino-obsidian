@@ -1,5 +1,5 @@
 // Shared resolution of the site/vault checkout and the `@site/*` alias map
-// (styles and helpers; the body render comes from `site render`).
+// (the brand mark; the preview comes from `site render`).
 // Both the plugin bundle (esbuild.config.mjs) and the preview-render harness
 // (scripts/preview-render.mjs) consume this, so "where the renderer + CSS come
 // from" is authored once, not twice.
@@ -24,22 +24,14 @@ export const vaultDir = process.env.VAULT_DIR
 
 // The owners the plugin imports instead of reimplementing.
 export const sitePaths = {
-  '@site/base-css': path.join(siteDir, 'src/styles/base.css'),
-  '@site/brand': path.join(siteDir, 'src/lib/brand.ts'),
-  '@site/web-styles': path.join(siteDir, 'src/lib/web-styles.ts'),
-  '@site/frontmatter': path.join(siteDir, 'src/lib/frontmatter.ts'),
-  '@site/inter-font': path.join(siteDir, 'public/assets/fonts/inter/inter-variable-latin.woff2'),
   '@site/brand-mark': path.join(siteDir, 'public/assets/brand/mark.svg'),
 };
 
-// esbuild loaders for the non-JS owners (CSS/SVG as text, the woff2 as a data URL).
-export const siteLoader = { '.css': 'text', '.svg': 'text', '.woff2': 'dataurl' };
+// esbuild loader for the non-JS owner (the SVG mark as text).
+export const siteLoader = { '.svg': 'text' };
 
 const labels = {
-  '@site/base-css': 'site base.css',
-  '@site/brand': 'site brand.ts',
-  '@site/frontmatter': 'site frontmatter helper',
-  '@site/inter-font': 'Inter font',
+  '@site/brand-mark': 'brand mark',
 };
 
 // Fail loudly (and identically) if the site checkout isn't where we expect.

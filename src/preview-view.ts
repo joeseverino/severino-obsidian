@@ -84,21 +84,9 @@ export class SitePreviewView extends ItemView {
     if (this.placeholder) this.placeholder.style.display = 'none';
     this.frame.style.display = '';
 
-    const fm = writeup.frontmatter as {
-      title?: string;
-      published_at?: string;
-      cover_image?: string;
-      cover_alt?: string;
-      technologies?: string[];
-    };
     const html = await buildPreviewDoc({
       markdown: writeup.markdown,
       slug: writeup.slug,
-      title: fm.title ?? writeup.slug,
-      date: fm.published_at,
-      coverImage: fm.cover_image,
-      coverAlt: fm.cover_alt,
-      technologies: Array.isArray(fm.technologies) ? fm.technologies : [],
       resolveAsset: localAssetResolver(this.app, writeup.file),
       vaultRoot: vaultRootOf(this.app),
     });

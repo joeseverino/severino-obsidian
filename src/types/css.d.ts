@@ -3,42 +3,9 @@
 // declarations type-check whether or not the sibling jseverino.com checkout is
 // present, so CI (which checks out only this repo) type-checks the same as local.
 
-// base.css as a text string (text loader), injected into the preview iframe.
-declare module '@site/base-css' {
-  const css: string;
-  export default css;
-}
-
-// The site's Inter woff2, inlined as a data URI (dataurl loader).
-declare module '@site/inter-font' {
-  const dataUri: string;
-  export default dataUri;
-}
-
 // The brand JS monogram mark (public/assets/brand/mark.svg), bundled as text so
 // the cockpit header shows the real logo without forking the asset.
 declare module '@site/brand-mark' {
   const svg: string;
   export default svg;
-}
-
-// The token-synced brand identity (src/lib/brand.mjs).
-declare module '@site/brand' {
-  export const BRAND: { navy: string; navyDeep: string; [key: string]: unknown };
-}
-
-// The site's "load BOTH" bundle: base.css + brand vars + Inter @font-face as one
-// <style> blob, so the preview can't forget the brand vars (src/lib/web-styles.mjs).
-declare module '@site/web-styles' {
-  export function previewStyles(opts: { baseCss: string; fontUrl: string }): string;
-}
-
-// The site's YAML parser helper. Astro strips frontmatter before rendering;
-// the plugin passes raw vault files through this same helper instead of
-// maintaining a regex splitter.
-declare module '@site/frontmatter' {
-  export function parseFrontmatter(markdown: string): {
-    content: string;
-    data: Record<string, unknown>;
-  };
 }

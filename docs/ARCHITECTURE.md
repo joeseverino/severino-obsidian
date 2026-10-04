@@ -34,8 +34,8 @@ tool (`site`, `tools`, `diagram`, `backlog`) only through the same CLI bridge:
 | Owner | What it owns | The plugin consumes it via |
 |---|---|---|
 | **[`severino-vault-mcp`](https://github.com/joeseverino/severino-vault-mcp)** (the MCP) | the vault brain — all task logic, the frontmatter schema, search, vault state, the one atomic writer | shells out to its **CLI subcommands** (below) |
-| **[`jseverino.com`](https://github.com/joeseverino/jseverino.com)** (the site) | markdown→HTML rendering (incl. the block DSL), `base.css`, the publish contract | esbuild **aliases** bundle the real files at build time |
-| **[`severino-brand`](https://github.com/joeseverino/severino-brand)** (the brand kit) | the identity — tokens, the JS monogram mark | the mark is bundled (`@site/brand-mark`); brand vars ride in via the site's `base.css` |
+| **[`jseverino.com`](https://github.com/joeseverino/jseverino.com)** (the site) | the writeup preview (rendering incl. the block DSL, article layout, styles), the publish contract, the brand mark | `site render --document` at runtime; the mark via an esbuild **alias** |
+| **[`severino-brand`](https://github.com/joeseverino/severino-brand)** (the brand kit) | the identity: tokens, the JS monogram mark | the mark is bundled (`@site/brand-mark`); brand vars arrive inside the page `site render --document` returns |
 
 Nothing here is re-implemented. The renderer is imported, not forked. The schema
 enums come from `schema --json`, not a hardcoded list. The logo is the kit's
@@ -165,15 +165,13 @@ via aliases and writes the plugin straight into the vault's
 `.obsidian/plugins/severino-obsidian/`:
 
 ```
-@site/base-css    → jseverino.com/src/styles/base.css   (text loader)
 @site/brand-mark  → public/assets/brand/mark.svg        (the JS monogram)
-@site/inter-font  → the Inter woff2                      (dataurl loader)
 ```
 
-So even the bundled assets are *consumed from their owner*, not copied into this
-repo. Edit `base.css` or the brand mark at the source and a rebuild picks it up.
-The writeup body is rendered at runtime instead: the preview pipes the unsaved
-buffer to `site render - --json`, the same render the site build ships.
+So even the bundled asset is *consumed from its owner*, not copied into this
+repo. The writeup preview is not bundled at all: the plugin pipes the unsaved
+buffer to `site render - --document --json`, and the site returns the whole
+page, its article layout and styles included.
 
 ---
 
@@ -186,8 +184,8 @@ buffer to `site render - --json`, the same render the site build ships.
   schema. The plugin can't write a malformed task.
 - **One schema.** Enum options come from `schema --json` (the same source HQ and
   the site validate against) — never a list the plugin maintains.
-- **One renderer, one identity.** The writeup preview is the site's own
-  `site render` + `base.css`; the logo is the brand kit's mark.
+- **One renderer, one identity.** The writeup preview is the page the site's
+  own `site render --document` returns; the logo is the brand kit's mark.
 
 The plugin is the *interface* to the system, not a part of the system's logic.
 That is the whole design, and it's what lets it grow without becoming a liability.

@@ -1,6 +1,6 @@
 // Bundle the plugin into the vault's plugin dir. The aliases below import the
-// writeup CSS and helpers straight from their owners (the site and the
-// brand-token-synced base.css); the body render comes from `site render`. The site/vault
+// brand mark and helpers straight from their owners; the writeup preview,
+// markup and styles, comes from `site render --document`. The site/vault
 // resolution + alias map live in scripts/site-paths.mjs (shared with the
 // preview-render harness), so they're authored once.
 import esbuild from 'esbuild';
@@ -35,7 +35,7 @@ const options = {
   sourcemap: watch ? 'inline' : false,
   treeShaking: true,
   banner: { js: banner },
-  // Styles and helpers from their owners.
+  // Helpers and the brand mark from their owners.
   alias: sitePaths,
   loader: siteLoader,
   external: [
