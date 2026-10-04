@@ -12,8 +12,8 @@ becoming a second source of truth. The full design is in
 | Concern | Owner (single source of truth) | How the plugin uses it |
 |---|---|---|
 | task logic, schema, search, the one writer | [`severino-vault-mcp`](https://github.com/joeseverino/severino-vault-mcp) (the MCP) | shells out to its CLI subcommands |
-| markdown→HTML + the `::figure`/`::table`/`::terminal` DSL | [`jseverino.com`](https://github.com/joeseverino/jseverino.com)`/src/lib/markdown.ts` | imports `renderWriteupHtml` (esbuild alias) |
-| brand tokens + writeup CSS + the JS mark | [`severino-brand`](https://github.com/joeseverino/severino-brand) → site `base.css` / `mark.svg` | bundled from source at build time |
+| the writeup preview: markdown, the `::figure`/`::table`/`::terminal` DSL, article layout, styles | [`jseverino.com`](https://github.com/joeseverino/jseverino.com) (`site render --document`) | pipes the unsaved buffer to `site render - --document --json` and shows the page it returns |
+| brand tokens + the JS mark | [`severino-brand`](https://github.com/joeseverino/severino-brand) → site `mark.svg` | the mark is bundled from source at build time |
 
 If a feature would re-implement an owner's piece, it's out by design.
 
@@ -43,7 +43,7 @@ If a feature would re-implement an owner's piece, it's out by design.
 **Writeup authoring** — the original surface, still here:
 
 - **Site preview** — a sandboxed iframe rendering the active writeup exactly as
-  `jseverino.com` will, using the site's own renderer + `base.css`.
+  `jseverino.com` will: the page comes from the site's own `site render --document`.
 - **Publish gate**, **asset doctor**, **graphics render**, **schema check**,
   **sync to site**, **DSL inserts**, **open on site / copy slug**.
 
@@ -63,7 +63,7 @@ feed, all derived live from the MCP:
 | ![New task modal](docs/images/new-task-modal.png) | ![Promote note modal](docs/images/promote-note-modal.png) |
 
 The **site-accurate writeup preview** — the active note rendered exactly as
-`jseverino.com` will, using the site's own renderer and `base.css`:
+`jseverino.com` will, the page returned by the site's own `site render --document`:
 
 ![Site-accurate writeup preview](docs/images/writeup-site-preview.png)
 
@@ -122,7 +122,7 @@ Obsidian plugin suite for the vault: site-accurate writeup preview + authoring p
 
 | command | effect | summary |
 |---|---|---|
-| `build` | `local_write` | Bundle the plugin into the vault (site renderer + base.css inlined). |
+| `build` | `local_write` | Bundle the plugin into the vault (the brand mark inlined; the preview comes from site render). |
 | `dev` | `local_write` | Watch-rebuild into the vault on change. |
 | `typecheck` | `read` | Type-check the source with tsc --noEmit. |
 | `commands:emit` | `local_write` | Render the cordon-v4 command contract from src/commands.mjs. |

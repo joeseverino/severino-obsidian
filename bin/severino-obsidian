@@ -27,7 +27,7 @@ const spec = describeScripts(pkg, {
     'commands:check': 'read',
   },
   summaries: {
-    build: 'Bundle the plugin into the vault (site renderer + base.css inlined).',
+    build: 'Bundle the plugin into the vault (the brand mark inlined; the preview comes from site render).',
     dev: 'Watch-rebuild into the vault on change.',
     typecheck: 'Type-check the source with tsc --noEmit.',
     'commands:emit': 'Render the cordon-v4 command contract from src/commands.mjs.',

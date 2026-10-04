@@ -1,8 +1,13 @@
-import { ItemView, WorkspaceLeaf, debounce } from 'obsidian';
+import { App, FileSystemAdapter, ItemView, WorkspaceLeaf, debounce } from 'obsidian';
 import { buildPreviewDoc } from './render';
 import { getActiveWriteup, localAssetResolver } from './writeup';
 
 export const PREVIEW_VIEW_TYPE = 'severino-site-preview';
+
+const vaultRootOf = (app: App): string => {
+  const adapter = app.vault.adapter;
+  return adapter instanceof FileSystemAdapter ? adapter.getBasePath() : '';
+};
 
 // A side pane that renders the active writeup exactly as the site will, in a
 // sandboxed iframe (full style isolation — the site CSS can't leak into
@@ -79,22 +84,11 @@ export class SitePreviewView extends ItemView {
     if (this.placeholder) this.placeholder.style.display = 'none';
     this.frame.style.display = '';
 
-    const fm = writeup.frontmatter as {
-      title?: string;
-      published_at?: string;
-      cover_image?: string;
-      cover_alt?: string;
-      technologies?: string[];
-    };
-    const html = buildPreviewDoc({
+    const html = await buildPreviewDoc({
       markdown: writeup.markdown,
       slug: writeup.slug,
-      title: fm.title ?? writeup.slug,
-      date: fm.published_at,
-      coverImage: fm.cover_image,
-      coverAlt: fm.cover_alt,
-      technologies: Array.isArray(fm.technologies) ? fm.technologies : [],
       resolveAsset: localAssetResolver(this.app, writeup.file),
+      vaultRoot: vaultRootOf(this.app),
     });
 
     // Nothing changed (e.g. just focusing the pane) — don't reload, or the

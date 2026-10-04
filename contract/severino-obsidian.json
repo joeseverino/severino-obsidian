@@ -13,7 +13,7 @@
   "commands": [
     {
       "name": "build",
-      "summary": "Bundle the plugin into the vault (site renderer + base.css inlined).",
+      "summary": "Bundle the plugin into the vault (the brand mark inlined; the preview comes from site render).",
       "args": [],
       "effect": "local_write",
       "paras": [],

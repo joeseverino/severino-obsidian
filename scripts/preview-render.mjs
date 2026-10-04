@@ -17,6 +17,7 @@ import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
 import { createRequire } from 'node:module';
+import { spawnSync } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
 import { repoRoot, siteDir, vaultDir, sitePaths, siteLoader, assertSitePaths } from './site-paths.mjs';
 
@@ -39,12 +40,12 @@ if (!fs.existsSync(indexMd)) {
   process.exit(1);
 }
 
-// Bundle buildPreviewDoc (+ the site frontmatter parser) to a temp ESM module,
-// resolving the @site/* owners exactly as the plugin build does.
+// Bundle buildPreviewDoc to a temp ESM module, resolving the @site/* owners
+// exactly as the plugin build does.
 const tmpOut = path.join(os.tmpdir(), `svo-preview-${process.pid}.mjs`);
 await esbuild.build({
   stdin: {
-    contents: "export { buildPreviewDoc } from './src/render.ts';\nexport { parseFrontmatter } from '@site/frontmatter';\n",
+    contents: "export { buildPreviewDoc } from './src/render.ts';\n",
     resolveDir: repoRoot,
     loader: 'js',
   },
@@ -55,19 +56,12 @@ await esbuild.build({
   alias: sitePaths,
   loader: siteLoader,
   logLevel: 'warning',
-  // The site libs pull in CJS deps (gray-matter) that `require('fs')`; give the
-  // ESM bundle a real require so node builtins resolve at runtime.
-  banner: { js: "import { createRequire as __cr } from 'node:module'; const require = __cr(import.meta.url);" },
   outfile: tmpOut,
 });
 
-const { buildPreviewDoc, parseFrontmatter } = await import(pathToFileURL(tmpOut).href);
+const { buildPreviewDoc } = await import(pathToFileURL(tmpOut).href);
 
 const raw = fs.readFileSync(indexMd, 'utf8');
-const { data } = parseFrontmatter(raw);
-
-// YAML parses `published_at: 2026-04-26` to a Date; the renderer wants a string.
-const asDateStr = (v) => (v instanceof Date ? v.toISOString().slice(0, 10) : v);
 
 // Point site asset URLs back at the local writeup folder (file:// so Chromium loads them).
 const resolveAsset = (rel) => {
@@ -75,16 +69,20 @@ const resolveAsset = (rel) => {
   return fs.existsSync(p) ? pathToFileURL(p).href : null;
 };
 
-const html = buildPreviewDoc({
-  markdown: raw,
-  slug,
-  title: data.title ?? slug,
-  date: asDateStr(data.published_at ?? data.date),
-  coverImage: data.cover_image,
-  coverAlt: data.cover_alt,
-  technologies: data.technologies ?? [],
-  resolveAsset,
-});
+// The page comes from the site checkout's own `site render --document`, as in the plugin.
+const renderDocument = async (markdown) => {
+  const run = spawnSync(process.execPath, [path.join(siteDir, 'bin/site.ts'), 'render', '-', '--document', '--json'], {
+    input: markdown,
+    encoding: 'utf8',
+    env: { ...process.env, VAULT_DIR: vaultDir },
+    maxBuffer: 16 * 1024 * 1024,
+  });
+  const doc = JSON.parse(run.stdout || '{}');
+  if (!doc.ok) throw new Error(doc.error?.message ?? (run.stderr || 'site render failed'));
+  return doc.document;
+};
+
+const html = await buildPreviewDoc({ markdown: raw, slug, resolveAsset, renderDocument });
 
 const out = path.resolve(outArg ?? path.join(os.tmpdir(), `preview-${slug}.png`));
 
