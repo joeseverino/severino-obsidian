@@ -1,7 +1,6 @@
-// Bundle the plugin into the vault's plugin dir. The two things that make this
-// plugin "own almost nothing" are the aliases below: the markdown→HTML renderer
-// and the writeup CSS are imported straight from their real owners (the site and
-// the brand-token-synced base.css), never reimplemented here. The site/vault
+// Bundle the plugin into the vault's plugin dir. The aliases below import the
+// writeup CSS and helpers straight from their owners (the site and the
+// brand-token-synced base.css); the body render comes from `site render`. The site/vault
 // resolution + alias map live in scripts/site-paths.mjs (shared with the
 // preview-render harness), so they're authored once.
 import esbuild from 'esbuild';
@@ -36,7 +35,7 @@ const options = {
   sourcemap: watch ? 'inline' : false,
   treeShaking: true,
   banner: { js: banner },
-  // The whole point: pull rendering + styles from their owners.
+  // Styles and helpers from their owners.
   alias: sitePaths,
   loader: siteLoader,
   external: [

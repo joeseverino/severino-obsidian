@@ -165,7 +165,6 @@ via aliases and writes the plugin straight into the vault's
 `.obsidian/plugins/severino-obsidian/`:
 
 ```
-@site/markdown    → jseverino.com/src/lib/markdown.ts   (the renderer)
 @site/base-css    → jseverino.com/src/styles/base.css   (text loader)
 @site/brand-mark  → public/assets/brand/mark.svg        (the JS monogram)
 @site/inter-font  → the Inter woff2                      (dataurl loader)
@@ -173,6 +172,8 @@ via aliases and writes the plugin straight into the vault's
 
 So even the bundled assets are *consumed from their owner*, not copied into this
 repo. Edit `base.css` or the brand mark at the source and a rebuild picks it up.
+The writeup body is rendered at runtime instead: the preview pipes the unsaved
+buffer to `site render - --json`, the same render the site build ships.
 
 ---
 
@@ -186,7 +187,7 @@ repo. Edit `base.css` or the brand mark at the source and a rebuild picks it up.
 - **One schema.** Enum options come from `schema --json` (the same source HQ and
   the site validate against) — never a list the plugin maintains.
 - **One renderer, one identity.** The writeup preview is the site's own
-  `renderWriteupHtml` + `base.css`; the logo is the brand kit's mark.
+  `site render` + `base.css`; the logo is the brand kit's mark.
 
 The plugin is the *interface* to the system, not a part of the system's logic.
 That is the whole design, and it's what lets it grow without becoming a liability.

@@ -12,7 +12,7 @@ becoming a second source of truth. The full design is in
 | Concern | Owner (single source of truth) | How the plugin uses it |
 |---|---|---|
 | task logic, schema, search, the one writer | [`severino-vault-mcp`](https://github.com/joeseverino/severino-vault-mcp) (the MCP) | shells out to its CLI subcommands |
-| markdown→HTML + the `::figure`/`::table`/`::terminal` DSL | [`jseverino.com`](https://github.com/joeseverino/jseverino.com)`/src/lib/markdown.ts` | imports `renderWriteupHtml` (esbuild alias) |
+| markdown to HTML + the `::figure`/`::table`/`::terminal` DSL | [`jseverino.com`](https://github.com/joeseverino/jseverino.com) (`site render`) | pipes the unsaved buffer to `site render - --json` |
 | brand tokens + writeup CSS + the JS mark | [`severino-brand`](https://github.com/joeseverino/severino-brand) → site `base.css` / `mark.svg` | bundled from source at build time |
 
 If a feature would re-implement an owner's piece, it's out by design.

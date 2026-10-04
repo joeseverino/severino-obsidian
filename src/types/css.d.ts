@@ -3,11 +3,6 @@
 // declarations type-check whether or not the sibling jseverino.com checkout is
 // present, so CI (which checks out only this repo) type-checks the same as local.
 
-// The site's markdown → HTML writeup renderer (src/lib/markdown.ts).
-declare module '@site/markdown' {
-  export function renderWriteupHtml(markdown: string, slug: string): string;
-}
-
 // base.css as a text string (text loader), injected into the preview iframe.
 declare module '@site/base-css' {
   const css: string;

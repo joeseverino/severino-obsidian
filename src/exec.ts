@@ -1,5 +1,4 @@
 import { execFile } from 'child_process';
-import { promisify } from 'util';
 
 // The plugin's bridge to the rest of the system: it invokes the same CLIs the
 // `site` TUI and AI sessions use (severino-vault-mcp, site, brand, diagram) and
@@ -8,8 +7,6 @@ import { promisify } from 'util';
 // Obsidian is GUI-launched, so it inherits a minimal PATH — we resolve tools to
 // ~/.local/bin explicitly and pass an augmented PATH so the bash CLIs can reach
 // their own dependencies.
-const pExecFile = promisify(execFile);
-
 const HOME = process.env.HOME ?? '';
 const BIN = `${HOME}/.local/bin`;
 const PATH = [BIN, '/opt/homebrew/bin', '/usr/local/bin', '/usr/bin', '/bin', process.env.PATH ?? '']
@@ -26,21 +23,28 @@ export interface RunOpts {
   cwd: string;
   /** Extra env vars (e.g. SVMC_VAULT_PATH for the MCP). */
   env?: Record<string, string>;
+  /** Written to the tool's stdin, then closed. */
+  input?: string;
 }
 
-export async function runTool(bin: string, args: string[], opts: RunOpts): Promise<ToolResult> {
-  try {
-    const { stdout, stderr } = await pExecFile(`${BIN}/${bin}`, args, {
-      cwd: opts.cwd,
-      env: { ...process.env, PATH, HOME, ...(opts.env ?? {}) },
-      timeout: 120_000,
-      maxBuffer: 16 * 1024 * 1024,
-    });
-    return { ok: true, stdout, stderr };
-  } catch (err) {
-    const e = err as { stdout?: string; stderr?: string; message?: string };
-    return { ok: false, stdout: e.stdout ?? '', stderr: e.stderr || e.message || String(err) };
-  }
+export function runTool(bin: string, args: string[], opts: RunOpts): Promise<ToolResult> {
+  return new Promise((resolve) => {
+    const child = execFile(
+      `${BIN}/${bin}`,
+      args,
+      {
+        cwd: opts.cwd,
+        env: { ...process.env, PATH, HOME, ...(opts.env ?? {}) },
+        timeout: 120_000,
+        maxBuffer: 16 * 1024 * 1024,
+      },
+      (err, stdout, stderr) => {
+        if (err) resolve({ ok: false, stdout: stdout ?? '', stderr: stderr || err.message || String(err) });
+        else resolve({ ok: true, stdout, stderr });
+      },
+    );
+    child.stdin?.end(opts.input ?? '');
+  });
 }
 
 export async function runToolJson<T = unknown>(

@@ -1,12 +1,10 @@
-// The renderer glue. The plugin owns NONE of the markdown→HTML logic or the
-// styling: it calls the site's own renderWriteupHtml, injects the site's own
-// styles via previewStyles (base.css + brand vars + font — the "load BOTH"
-// contract owned by the site), and reproduces the article page STRUCTURE that
-// portfolio/[slug]/index.astro emits so those styles actually apply. All inputs
-// come from the real owners via esbuild aliases (see esbuild.config.mjs).
+// The renderer glue. The plugin owns none of the markdown-to-HTML logic or the
+// styling: the body comes from the site's own `site render`, the styles from
+// the site's previewStyles (base.css, brand vars, font), and this file
+// reproduces the article page structure portfolio/[slug]/index.astro emits so
+// those styles apply. Styles arrive via esbuild aliases (esbuild.config.mjs).
 //
-import { renderWriteupHtml } from '@site/markdown';
-import { parseFrontmatter } from '@site/frontmatter';
+import { runToolJson } from './exec';
 import { previewStyles } from '@site/web-styles';
 import siteBaseCss from '@site/base-css';
 import interFontUrl from '@site/inter-font';
@@ -20,6 +18,31 @@ export interface RenderInput {
   coverAlt?: string;
   technologies?: string[];
   resolveAsset: (rel: string) => string | null;
+  /** Renders the markdown body; defaults to the site CLI. */
+  renderBody?: (markdown: string) => Promise<string>;
+  /** Vault root the site CLI reads from; required by the default renderBody. */
+  vaultRoot?: string;
+}
+
+interface SiteRender {
+  ok?: boolean;
+  html?: string;
+  error?: { message?: string };
+}
+
+// The site renders the unsaved buffer (`-` reads stdin), so the preview tracks
+// live edits without the plugin bundling the renderer.
+export function siteRenderBody(vaultRoot: string): (markdown: string) => Promise<string> {
+  return async (markdown) => {
+    const res = await runToolJson<SiteRender>('site', ['render', '-', '--json'], {
+      cwd: vaultRoot,
+      env: { VAULT_DIR: vaultRoot },
+      input: markdown,
+    });
+    if (!res.ok || !res.data) throw new Error(res.error ?? 'site render failed to run');
+    if (!res.data.ok || typeof res.data.html !== 'string') throw new Error(res.data.error?.message ?? 'site render failed');
+    return res.data.html;
+  };
 }
 
 const escapeHtml = (s: string): string =>
@@ -43,24 +66,27 @@ function formatDate(raw?: string): string {
 const titleCase = (slug: string): string =>
   slug.replace(/[-_]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 
-// Point site asset URLs (/assets/writeups/<slug>/…) back at local vault files.
+// Point asset URLs back at local vault files: the site form
+// (/assets/writeups/<slug>/...) and the folder-relative form (./images/...)
+// the raw vault markdown renders with.
 function rewriteAssets(html: string, slug: string, resolve: (rel: string) => string | null): string {
   const base = `/assets/writeups/${slug}/`;
-  return html.replace(
-    new RegExp(`((?:src|href)=")${escapeRegExp(base)}([^"]+)(")`, 'g'),
-    (whole, pre: string, rel: string, post: string) => {
-      const local = resolve(rel);
-      return local ? `${pre}${local}${post}` : whole;
-    },
-  );
+  const local = (whole: string, pre: string, rel: string, post: string): string => {
+    const found = resolve(rel);
+    return found ? `${pre}${found}${post}` : whole;
+  };
+  return html
+    .replace(new RegExp(`((?:src|href)=")${escapeRegExp(base)}([^"]+)(")`, 'g'), local)
+    .replace(/((?:src|href)=")(?:\.\/)?((?![a-z][a-z0-9+.-]*:|\/|#)[^"]+)(")/gi, local);
 }
 
-export function buildPreviewDoc(input: RenderInput): string {
+export async function buildPreviewDoc(input: RenderInput): Promise<string> {
   const { markdown, slug, title, date, coverImage, coverAlt, technologies, resolveAsset } = input;
+  const renderBody = input.renderBody ?? siteRenderBody(input.vaultRoot ?? '');
 
   let body: string;
   try {
-    body = renderWriteupHtml(parseFrontmatter(markdown).content, slug);
+    body = await renderBody(markdown);
   } catch (err) {
     body = `<pre class="svo-error">Preview failed to render:\n${escapeHtml(String(err))}</pre>`;
   }

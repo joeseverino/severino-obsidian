@@ -17,6 +17,7 @@ import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
 import { createRequire } from 'node:module';
+import { spawnSync } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
 import { repoRoot, siteDir, vaultDir, sitePaths, siteLoader, assertSitePaths } from './site-paths.mjs';
 
@@ -75,7 +76,20 @@ const resolveAsset = (rel) => {
   return fs.existsSync(p) ? pathToFileURL(p).href : null;
 };
 
-const html = buildPreviewDoc({
+// The body comes from the site checkout's own `site render`, as in the plugin.
+const renderBody = async (markdown) => {
+  const run = spawnSync(process.execPath, [path.join(siteDir, 'bin/site.ts'), 'render', '-', '--json'], {
+    input: markdown,
+    encoding: 'utf8',
+    env: { ...process.env, VAULT_DIR: vaultDir },
+    maxBuffer: 16 * 1024 * 1024,
+  });
+  const doc = JSON.parse(run.stdout || '{}');
+  if (!doc.ok) throw new Error(doc.error?.message ?? (run.stderr || 'site render failed'));
+  return doc.html;
+};
+
+const html = await buildPreviewDoc({
   markdown: raw,
   slug,
   title: data.title ?? slug,
@@ -84,6 +98,7 @@ const html = buildPreviewDoc({
   coverAlt: data.cover_alt,
   technologies: data.technologies ?? [],
   resolveAsset,
+  renderBody,
 });
 
 const out = path.resolve(outArg ?? path.join(os.tmpdir(), `preview-${slug}.png`));

@@ -1,4 +1,5 @@
-// Shared resolution of the site/vault checkout and the `@site/*` alias map.
+// Shared resolution of the site/vault checkout and the `@site/*` alias map
+// (styles and helpers; the body render comes from `site render`).
 // Both the plugin bundle (esbuild.config.mjs) and the preview-render harness
 // (scripts/preview-render.mjs) consume this, so "where the renderer + CSS come
 // from" is authored once, not twice.
@@ -23,7 +24,6 @@ export const vaultDir = process.env.VAULT_DIR
 
 // The owners the plugin imports instead of reimplementing.
 export const sitePaths = {
-  '@site/markdown': path.join(siteDir, 'src/lib/markdown/index.ts'),
   '@site/base-css': path.join(siteDir, 'src/styles/base.css'),
   '@site/brand': path.join(siteDir, 'src/lib/brand.ts'),
   '@site/web-styles': path.join(siteDir, 'src/lib/web-styles.ts'),
@@ -36,7 +36,6 @@ export const sitePaths = {
 export const siteLoader = { '.css': 'text', '.svg': 'text', '.woff2': 'dataurl' };
 
 const labels = {
-  '@site/markdown': 'site renderer',
   '@site/base-css': 'site base.css',
   '@site/brand': 'site brand.ts',
   '@site/frontmatter': 'site frontmatter helper',
