@@ -18,7 +18,7 @@
       "effect": "local_write",
       "paras": [],
       "examples": [],
-      "delegates": "npm run version:sync && node esbuild.config.mjs"
+      "delegates": "npm run version:sync && node esbuild.config.ts"
     },
     {
       "name": "dev",
@@ -27,7 +27,7 @@
       "effect": "local_write",
       "paras": [],
       "examples": [],
-      "delegates": "node esbuild.config.mjs --watch"
+      "delegates": "node esbuild.config.ts --watch"
     },
     {
       "name": "typecheck",
@@ -39,13 +39,22 @@
       "delegates": "tsc --noEmit"
     },
     {
+      "name": "test",
+      "summary": "Run the unit tests with node --test.",
+      "args": [],
+      "effect": "read",
+      "paras": [],
+      "examples": [],
+      "delegates": "node --import ./tests/register-obsidian-stub.ts --test 'tests/*.test.ts'"
+    },
+    {
       "name": "commands:emit",
-      "summary": "Render the cordon-v4 command contract from src/commands.mjs.",
+      "summary": "Render the cordon-v4 command contract from src/commands.ts.",
       "args": [],
       "effect": "local_write",
       "paras": [],
       "examples": [],
-      "delegates": "node bin/emit-obsidian-commands.mjs"
+      "delegates": "node bin/emit-obsidian-commands.ts"
     },
     {
       "name": "commands:check",
@@ -54,7 +63,7 @@
       "effect": "read",
       "paras": [],
       "examples": [],
-      "delegates": "node bin/emit-obsidian-commands.mjs --check"
+      "delegates": "node bin/emit-obsidian-commands.ts --check"
     }
   ]
 }

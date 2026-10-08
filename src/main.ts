@@ -1,34 +1,29 @@
 import { Plugin, Notice, Editor, TFile, FileSystemAdapter, debounce } from 'obsidian';
-import { SitePreviewView, PREVIEW_VIEW_TYPE } from './preview-view';
-import { getActiveWriteup } from './writeup';
-import { assetReport } from './assets';
-import { insertBlock, BlockKind } from './dsl';
-import { OBSIDIAN_COMMANDS } from './commands.mjs';
-import { gateWriteup, syncToSite } from './system';
-import { graphicsStatus, renderGraphics } from './graphics';
-import { effectFor, needsConfirm, Effect } from './cordon';
-import { fetchSchema, lintFrontmatter } from './schema';
-import { ResultModal, ResultSection } from './result-modal';
-import { NewTaskModal, ProjectOption } from './new-task-modal';
-import { CockpitView, COCKPIT_VIEW_TYPE } from './cockpit-view';
-import { AskVaultModal } from './ask-vault-modal';
-import { RelationEditorModal } from './relation-editor-modal';
-import { runTool, runToolJson } from './exec';
+import { SitePreviewView, PREVIEW_VIEW_TYPE } from './preview-view.ts';
+import { getActiveWriteup } from './writeup.ts';
+import { assetReport } from './assets.ts';
+import { insertBlock, isBlockKind } from './dsl.ts';
+import { OBSIDIAN_COMMANDS } from './commands.ts';
+import { gateWriteup, syncToSite } from './system.ts';
+import { graphicsStatus, renderGraphics } from './graphics.ts';
+import { effectFor, needsConfirm, type Effect } from './cordon.ts';
+import { fetchSchema, lintFrontmatter } from './schema.ts';
+import { ResultModal, type ResultSection } from './result-modal.ts';
+import { NewTaskModal } from './new-task-modal.ts';
+import { CockpitView, COCKPIT_VIEW_TYPE } from './cockpit-view.ts';
+import { AskVaultModal } from './ask-vault-modal.ts';
+import { RelationEditorModal } from './relation-editor-modal.ts';
+import { runTool, runToolJson } from './exec.ts';
+import { isBrief, isProjectsResult, isWriteResult, type ProjectOption } from './mcp-shapes.ts';
 
 const INDEXED_DIRS = ['01 Projects/', '02 Infrastructure/', '03 Runbooks/'];
 
 const SITE_BASE = 'https://jseverino.com';
 
-interface GateFrontmatter {
-  published?: boolean;
-  featured?: boolean;
-  published_at?: string;
-}
-
 export default class SeverinoObsidianPlugin extends Plugin {
   private gateEl: HTMLElement | null = null;
 
-  async onload(): Promise<void> {
+  override async onload(): Promise<void> {
     // ── Flagship: the site preview pane ──────────────────────────────────────
     this.registerView(PREVIEW_VIEW_TYPE, (leaf) => new SitePreviewView(leaf));
     this.registerView(
@@ -43,7 +38,7 @@ export default class SeverinoObsidianPlugin extends Plugin {
     );
     this.addRibbonIcon('eye', 'Severino: site preview', () => void this.openPreview());
     this.addRibbonIcon('layout-dashboard', 'Severino: cockpit', () => void this.openCockpit());
-    // Register every command from the single-source surface (src/commands.mjs)
+    // Register every command from the single-source surface (src/commands.ts)
     // — the same array the cordon contract is emitted from. Only the handler
     // wiring lives here; the id/name/effect metadata has one home.
     const callbacks: Partial<Record<string, () => void>> = {
@@ -65,7 +60,8 @@ export default class SeverinoObsidianPlugin extends Plugin {
     };
     for (const spec of OBSIDIAN_COMMANDS) {
       if (spec.type === 'editor') {
-        const kind = spec.id.replace(/^insert-/, '') as BlockKind;
+        const kind = spec.id.replace(/^insert-/, '');
+        if (!isBlockKind(kind)) continue;
         this.addCommand({
           id: spec.id,
           name: spec.name,
@@ -107,11 +103,7 @@ export default class SeverinoObsidianPlugin extends Plugin {
   // bar. Derived from the vault brief (one read); refreshed on load + on create.
   private async updateBacklogBadge(): Promise<void> {
     if (!this.backlogEl) return;
-    const r = await runToolJson<{
-      ok: boolean;
-      tasks?: { open: number; stale: number };
-      inbox?: { count: number };
-    }>('severino-vault-mcp', ['brief', '--days', '7'], { cwd: this.vaultPath() });
+    const r = await runToolJson('severino-vault-mcp', ['brief', '--days', '7'], isBrief, { cwd: this.vaultPath() });
     const brief = r.data;
     if (!brief?.ok) {
       this.backlogEl.setText('');
@@ -165,11 +157,9 @@ export default class SeverinoObsidianPlugin extends Plugin {
 
   private async taskProjects(): Promise<ProjectOption[]> {
     if (this.projectCache) return this.projectCache;
-    const r = await runToolJson<{ ok: boolean; projects?: ProjectOption[] }>(
-      'severino-vault-mcp',
-      ['task-projects'],
-      { cwd: this.vaultPath() },
-    );
+    const r = await runToolJson('severino-vault-mcp', ['task-projects'], isProjectsResult, {
+      cwd: this.vaultPath(),
+    });
     this.projectCache = r.data?.ok ? r.data.projects ?? [] : [];
     return this.projectCache;
   }
@@ -178,7 +168,7 @@ export default class SeverinoObsidianPlugin extends Plugin {
   private contextProject(): string | null {
     const path = this.app.workspace.getActiveFile()?.path ?? '';
     const m = /^01 Projects\/([^/]+)\//.exec(path);
-    return m ? m[1] : null;
+    return m?.[1] ?? null;
   }
 
   private async runNewTask(): Promise<void> {
@@ -190,11 +180,7 @@ export default class SeverinoObsidianPlugin extends Plugin {
     new NewTaskModal(this.app, projects, this.contextProject(), async (input) => {
       const args = ['task-add', input.title, '--effort', input.effort, '--priority', input.priority];
       if (input.project) args.push('--project', input.project);
-      const r = await runToolJson<{ ok: boolean; doc_id?: string; relative_path?: string; error?: string }>(
-        'severino-vault-mcp',
-        args,
-        { cwd: this.vaultPath() },
-      );
+      const r = await runToolJson('severino-vault-mcp', args, isWriteResult, { cwd: this.vaultPath() });
       const data = r.data;
       if (!data?.ok) {
         new Notice(`Task not created: ${data?.error ?? r.error ?? 'unknown error'}`, 8000);
@@ -252,11 +238,7 @@ export default class SeverinoObsidianPlugin extends Plugin {
       async (input) => {
         const args = ['promote-note', file.path, '--title', input.title, '--effort', input.effort, '--priority', input.priority];
         if (input.project) args.push('--project', input.project);
-        const r = await runToolJson<{ ok: boolean; relative_path?: string; error?: string }>(
-          'severino-vault-mcp',
-          args,
-          { cwd: this.vaultPath() },
-        );
+        const r = await runToolJson('severino-vault-mcp', args, isWriteResult, { cwd: this.vaultPath() });
         if (!r.data?.ok) {
           new Notice(`Promote failed: ${r.data?.error ?? r.error ?? 'unknown'}`, 8000);
           return;
@@ -298,9 +280,7 @@ export default class SeverinoObsidianPlugin extends Plugin {
         const args = ['update-frontmatter', file.path, '--set-related-projects', ...changes.related_projects];
         if (changes.status) args.push('--status', changes.status);
         if (changes.sensitivity) args.push('--sensitivity', changes.sensitivity);
-        const r = await runToolJson<{ ok: boolean; error?: string }>('severino-vault-mcp', args, {
-          cwd: this.vaultPath(),
-        });
+        const r = await runToolJson('severino-vault-mcp', args, isWriteResult, { cwd: this.vaultPath() });
         if (r.data?.ok) new Notice('Relations updated.');
         else new Notice(`Update failed: ${r.data?.error ?? r.error ?? 'unknown'}`, 8000);
       },
@@ -316,7 +296,7 @@ export default class SeverinoObsidianPlugin extends Plugin {
         await this.app.workspace.getLeaf(true).openFile(file);
         return;
       }
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      await sleep(100);
     }
     new Notice(`Created — open ${relPath} from the file list shortly.`, 6000);
   }
@@ -364,7 +344,7 @@ export default class SeverinoObsidianPlugin extends Plugin {
       this.gateEl.removeClass('svo-gate-published', 'svo-gate-draft');
       return;
     }
-    const fm = writeup.frontmatter as GateFrontmatter;
+    const fm = writeup.frontmatter;
     const published = fm.published === true;
     const bits = [
       published ? 'published' : 'draft',

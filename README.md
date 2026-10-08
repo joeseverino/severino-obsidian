@@ -91,14 +91,22 @@ open the cockpit from the ribbon. The CLIs it shells out to
 ```sh
 npm run dev             # watch-rebuild into the vault
 npm run typecheck       # tsc --noEmit
-npm run commands:emit   # regenerate the cordon command contract after editing src/commands.mjs
+npm test                # node --test over the pure modules
+npm run commands:emit   # regenerate the cordon command contract after editing src/commands.ts
 ```
 
-The command surface is declared once in `src/commands.mjs` and rendered into the
+The command surface is declared once in `src/commands.ts` and rendered into the
 live commands, the cordon-v4 contract (`contract/obsidian-commands.json`), and the
 reference below — they cannot drift. Each command carries its `effect`
 (`read < local_write < vault_write < remote_write < deploy`) and the fleet command
 it delegates to.
+
+Everything is TypeScript, scripts and build config included. Node 24 runs the
+`.ts` entry points directly by stripping types, so `tsconfig.json` sets
+`erasableSyntaxOnly` (no enums, namespaces, or constructor parameter
+properties) and `verbatimModuleSyntax`. The plugin bundle targets ES2022
+(Chromium 94 and later); the harness `scripts/preview-render.ts` targets Node. The only plain-JS file is the
+extensionless launcher `bin/severino-obsidian`.
 
 - **Architecture:** [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 - **Cornerstones / governance:** [docs/CORNERSTONES.md](docs/CORNERSTONES.md)
@@ -108,9 +116,9 @@ it delegates to.
 The command surface is derived from `package.json` scripts via the cordon emitter
 (`bin/severino-obsidian`); regenerate after a scripts change with
 `npm run describe:write`. The reference below is rendered from the contract by
-`scripts/gen-readme.mjs` and gate-checked — don't hand-edit it.
+`scripts/gen-readme.ts` and gate-checked — don't hand-edit it.
 
-<!-- BEGIN GENERATED: cli-reference (scripts/gen-readme.mjs — do not edit by hand) -->
+<!-- BEGIN GENERATED: cli-reference (scripts/gen-readme.ts — do not edit by hand) -->
 
 ### `severino-obsidian`
 
@@ -125,7 +133,8 @@ Obsidian plugin suite for the vault: site-accurate writeup preview + authoring p
 | `build` | `local_write` | Bundle the plugin into the vault (the brand mark inlined; the preview comes from site render). |
 | `dev` | `local_write` | Watch-rebuild into the vault on change. |
 | `typecheck` | `read` | Type-check the source with tsc --noEmit. |
-| `commands:emit` | `local_write` | Render the cordon-v4 command contract from src/commands.mjs. |
+| `test` | `read` | Run the unit tests with node --test. |
+| `commands:emit` | `local_write` | Render the cordon-v4 command contract from src/commands.ts. |
 | `commands:check` | `read` | Fail if the committed command contract is stale. |
 
 ---

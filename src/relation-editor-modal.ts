@@ -1,4 +1,4 @@
-import { App, Modal, Setting, Notice, TFile } from 'obsidian';
+import { App, Modal, Setting, TFile } from 'obsidian';
 
 export interface RelationSchema {
   statuses: string[];
@@ -29,16 +29,26 @@ export class RelationEditorModal extends Modal {
   private status: string;
   private sensitivity: string;
   private chipsEl: HTMLElement | null = null;
+  private readonly file: TFile;
+  private readonly current: RelationCurrent;
+  private readonly projects: string[];
+  private readonly schema: RelationSchema;
+  private readonly onSave: (changes: RelationChanges) => void | Promise<void>;
 
   constructor(
     app: App,
-    private readonly file: TFile,
-    private readonly current: RelationCurrent,
-    private readonly projects: string[],
-    private readonly schema: RelationSchema,
-    private readonly onSave: (changes: RelationChanges) => void | Promise<void>,
+    file: TFile,
+    current: RelationCurrent,
+    projects: string[],
+    schema: RelationSchema,
+    onSave: (changes: RelationChanges) => void | Promise<void>,
   ) {
     super(app);
+    this.file = file;
+    this.current = current;
+    this.projects = projects;
+    this.schema = schema;
+    this.onSave = onSave;
     this.selected = new Set(current.related_projects);
     this.status = current.status;
     this.sensitivity = current.sensitivity;
@@ -48,7 +58,7 @@ export class RelationEditorModal extends Modal {
     return this.current.doc_type === 'task';
   }
 
-  onOpen(): void {
+  override onOpen(): void {
     const { contentEl } = this;
     contentEl.addClass('svo-relations');
     contentEl.createEl('h3', { text: `Relations — ${this.file.basename}` });
@@ -126,7 +136,7 @@ export class RelationEditorModal extends Modal {
     await this.onSave(changes);
   }
 
-  onClose(): void {
+  override onClose(): void {
     this.contentEl.empty();
   }
 }

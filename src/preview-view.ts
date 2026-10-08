@@ -1,6 +1,6 @@
 import { App, FileSystemAdapter, ItemView, WorkspaceLeaf, debounce } from 'obsidian';
-import { buildPreviewDoc } from './render';
-import { getActiveWriteup, localAssetResolver } from './writeup';
+import { buildPreviewDoc } from './render.ts';
+import { getActiveWriteup, localAssetResolver } from './writeup.ts';
 
 export const PREVIEW_VIEW_TYPE = 'severino-site-preview';
 
@@ -40,23 +40,23 @@ export class SitePreviewView extends ItemView {
     super(leaf);
   }
 
-  getViewType(): string {
+  override getViewType(): string {
     return PREVIEW_VIEW_TYPE;
   }
 
-  getDisplayText(): string {
+  override getDisplayText(): string {
     return 'Site preview';
   }
 
-  getIcon(): string {
+  override getIcon(): string {
     return 'eye';
   }
 
-  onResize(): void {
+  override onResize(): void {
     this.relayoutOnResize();
   }
 
-  async onOpen(): Promise<void> {
+  override async onOpen(): Promise<void> {
     this.contentEl.empty();
     this.contentEl.addClass('svo-preview');
     this.placeholder = this.contentEl.createDiv({

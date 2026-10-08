@@ -142,7 +142,7 @@ frontmatter that already exists.
 
 ## The command surface — one declaration, three renders
 
-Every Obsidian command is declared **once** in `src/commands.mjs`. That single
+Every Obsidian command is declared **once** in `src/commands.ts`. That single
 array drives:
 
 1. the live command registrations (`src/main.ts`),
@@ -160,13 +160,16 @@ risk-gating the rest of the fleet uses.
 
 ## The build: consume at compile time
 
-`esbuild.config.mjs` (+ `scripts/site-paths.mjs`) bundles the owners' real files
+`esbuild.config.ts` (+ `scripts/site-paths.ts`) bundles the owners' real files
 via aliases and writes the plugin straight into the vault's
 `.obsidian/plugins/severino-obsidian/`:
 
 ```
 @site/brand-mark  → public/assets/brand/mark.svg        (the JS monogram)
 ```
+
+The bundle targets ES2022 (Chromium 94 and later) and leaves `node:*` modules, the Node builtins,
+`obsidian`, `electron` and the CodeMirror packages as runtime `require` calls.
 
 So even the bundled asset is *consumed from its owner*, not copied into this
 repo. The writeup preview is not bundled at all: the plugin pipes the unsaved

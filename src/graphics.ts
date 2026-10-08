@@ -1,6 +1,6 @@
 import { App, TFile, TFolder } from 'obsidian';
-import { copyFileSync } from 'fs';
-import { runTool } from './exec';
+import { copyFileSync } from 'node:fs';
+import { runTool } from './exec.ts';
 
 // Graphics status + render. The writeup asset-folder model: graphics/ holds the
 // SOURCE (*.figure.json / *.mmd), images/ holds the RENDER that ships. This

@@ -1,4 +1,7 @@
-import { execFile } from 'child_process';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
+
+const execFileAsync = promisify(execFile);
 
 // Open a project's repo in an external app. The plugin owns only this UI action;
 // the path comes from the project's `project_path` frontmatter (derive, don't
@@ -12,17 +15,13 @@ export const LAUNCH_TARGETS: { target: LaunchTarget; label: string }[] = [
   { target: 'github', label: 'GitHub' },
 ];
 
-function run(cmd: string, args: string[]): Promise<string> {
-  return new Promise((resolve, reject) => {
-    execFile(cmd, args, { timeout: 15_000 }, (err, stdout) => {
-      if (err) reject(err);
-      else resolve(String(stdout).trim());
-    });
-  });
+async function run(cmd: string, args: string[]): Promise<string> {
+  const { stdout } = await execFileAsync(cmd, args, { signal: AbortSignal.timeout(15_000) });
+  return stdout.trim();
 }
 
 // git remote (ssh or https) → the https web URL.
-function webUrl(remote: string): string | null {
+export function webUrl(remote: string): string | null {
   const r = remote.trim().replace(/\.git$/, '');
   const ssh = /^git@([^:]+):(.+)$/.exec(r);
   if (ssh) return `https://${ssh[1]}/${ssh[2]}`;

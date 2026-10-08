@@ -1,25 +1,28 @@
-import { runToolJson } from './exec';
+import { runToolJson } from './exec.ts';
+import { arrayOf, isString, shape, type Infer } from './guards.ts';
 
 // B — the plugin never hardcodes the frontmatter schema. It derives the
 // canonical enums from `severino-vault-mcp schema` (the single source HQ, the
 // site, and the vault schema doc all validate against), so the plugin can't
 // become a drifting extra surface.
 
-export interface VaultSchema {
-  doc_id_prefixes: string[];
-  doc_types: string[];
-  environments: string[];
-  required_fields: string[];
-  sensitivities: string[];
-  statuses: string[];
-  task_statuses: string[];
-}
+const schemaSpec = {
+  doc_id_prefixes: arrayOf(isString),
+  doc_types: arrayOf(isString),
+  environments: arrayOf(isString),
+  required_fields: arrayOf(isString),
+  sensitivities: arrayOf(isString),
+  statuses: arrayOf(isString),
+  task_statuses: arrayOf(isString),
+};
+export type VaultSchema = Infer<typeof schemaSpec>;
+const isVaultSchema = shape(schemaSpec);
 
 let cache: VaultSchema | null = null;
 
 export async function fetchSchema(vaultRoot: string): Promise<VaultSchema | null> {
   if (cache) return cache;
-  const res = await runToolJson<VaultSchema>('severino-vault-mcp', ['schema'], {
+  const res = await runToolJson('severino-vault-mcp', ['schema'], isVaultSchema, {
     cwd: vaultRoot,
     env: { SVMC_VAULT_PATH: vaultRoot },
   });

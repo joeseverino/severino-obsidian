@@ -9,7 +9,7 @@
   "global_options": [],
   "positionals": [],
   "paras": [
-    "Runtime commands invoked from Obsidian’s command palette; each carries a cordon effect (read < local_write < vault_write < remote_write < deploy) so the fleet sees its blast radius. Rendered from src/commands.mjs — the same array that registers the live commands."
+    "Runtime commands invoked from Obsidian’s command palette; each carries a cordon effect (read < local_write < vault_write < remote_write < deploy) so the fleet sees its blast radius. Rendered from src/commands.ts — the same array that registers the live commands."
   ],
   "examples": [],
   "commands": [

@@ -1,5 +1,5 @@
 import { App, Notice, TFile, setIcon } from 'obsidian';
-import { LAUNCH_TARGETS, launchProject } from '../launch';
+import { LAUNCH_TARGETS, launchProject } from '../launch.ts';
 
 // A project's repo path = its `project_path` frontmatter (the owner). One reader,
 // shared by the Projects panel and the context bar.

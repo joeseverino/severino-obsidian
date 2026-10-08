@@ -1,16 +1,7 @@
-import { runToolJson } from '../exec';
-import { CockpitContext, CockpitPanel } from './panel';
-import { projectPathOf, renderLaunchButtons } from './util';
-
-interface Project {
-  slug: string;
-  open: number;
-}
-
-interface ProjectsResult {
-  ok: boolean;
-  projects?: Project[];
-}
+import { runToolJson } from '../exec.ts';
+import { isProjectsResult } from '../mcp-shapes.ts';
+import type { CockpitContext, CockpitPanel } from './panel.ts';
+import { projectPathOf, renderLaunchButtons } from './util.ts';
 
 // The live project inventory + launcher. Projects + open counts from the MCP
 // (`task-projects`); each project's repo path from its `project_path`
@@ -21,7 +12,7 @@ export class ProjectsPanel implements CockpitPanel {
   title = 'Projects';
 
   async render(body: HTMLElement, ctx: CockpitContext): Promise<void> {
-    const r = await runToolJson<ProjectsResult>('severino-vault-mcp', ['task-projects'], { cwd: ctx.vaultPath });
+    const r = await runToolJson('severino-vault-mcp', ['task-projects'], isProjectsResult, { cwd: ctx.vaultPath });
     const projects = (r.data?.projects ?? []).slice();
     if (!projects.length) {
       body.createDiv({ cls: 'svo-cockpit-empty', text: 'No projects found.' });

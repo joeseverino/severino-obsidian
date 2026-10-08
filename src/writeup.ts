@@ -1,4 +1,4 @@
-import { App, TFile, MarkdownView } from 'obsidian';
+import { MarkdownView, TFile, type App, type Vault } from 'obsidian';
 
 // Writeups live at `05 Writeups/<slug>/index.md`; the slug is the folder name.
 export const WRITEUPS_DIR = '05 Writeups';
@@ -36,7 +36,10 @@ export async function getActiveWriteup(app: App): Promise<ActiveWriteup | null> 
 
 // Map a site asset path (e.g. images/foo.png, relative to the writeup folder) to
 // an Obsidian resource URL for the local file, or null if it doesn't exist.
-export function localAssetResolver(app: App, file: TFile): (rel: string) => string | null {
+export function localAssetResolver(
+  app: { vault: Pick<Vault, 'getAbstractFileByPath' | 'getResourcePath'> },
+  file: TFile,
+): (rel: string) => string | null {
   const folder = file.parent?.path ?? '';
   return (rel: string) => {
     const clean = rel.replace(/^\.?\//, '');

@@ -9,8 +9,28 @@ anything an older repo's docs imply.
 
 The plugin emits a second cordon-v4 contract beyond the build scripts:
 `contract/obsidian-commands.json` is the runtime command surface, rendered from
-`src/commands.mjs` (`npm run commands:emit`) — the same array that registers the
+`src/commands.ts` (`npm run commands:emit`) — the same array that registers the
 live Obsidian commands. Keep them in sync; that file is the single source.
+
+## TypeScript and tests
+
+All source, scripts and build config are `.ts`; `npm run typecheck` covers
+`src/`, `bin/`, `scripts/`, `tests/` and `esbuild.config.ts` under a strict
+flag set (`noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`,
+`noImplicitOverride`, `verbatimModuleSyntax`, `erasableSyntaxOnly`, and the
+`noUnused*` pair). No `any`, non-null assertions or silencing casts: narrow with
+guards (`src/guards.ts`) and validate CLI JSON with a guard passed to
+`runToolJson`. Node 24 runs the `.ts` entry points by stripping types, so
+relative imports carry the `.ts` extension and constructor parameter properties
+are not allowed.
+
+`npm test` runs `node --test` over the modules with no Obsidian runtime in their
+logic (`tests/obsidian-stub.ts` stands in for the `obsidian` package). The
+gate runs it as the `test` command in `cordon.checks.json`.
+
+The cordon `readme-sync` check looks for `scripts/gen-readme.mjs`; the generator
+is `scripts/gen-readme.ts`, so the gate runs it through the `readme-sync-ts`
+command in `cordon.checks.json` instead.
 
 ## How a command surface is documented here
 
@@ -120,7 +140,7 @@ default posture is lean, and you opt in by adding the capability, not by flippin
   (or open `cordon.checks.json` and let the schema prompt you). `--json` is the
   agent contract; `--phase pre-build|build|post-build` runs one phase.
 - The `idempotence` knob ships **off** (`"command": null`). When you add a
-  build/generate step, set it — e.g. `"command": "scripts/gen-readme.mjs"` — and
+  build/generate step, set it — e.g. `"command": "scripts/gen-readme.ts"` — and
   the check fails if that command ever dirties the worktree.
 - Add a spec as a command (every spec carries an honest `effect`, like a tool):
 
