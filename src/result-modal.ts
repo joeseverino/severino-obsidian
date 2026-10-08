@@ -9,15 +9,16 @@ export interface ResultSection {
 // A small, reusable modal for surfacing CLI/MCP results (publish gate, tag
 // report, graphics status) in the editor.
 export class ResultModal extends Modal {
-  constructor(
-    app: App,
-    private readonly title: string,
-    private readonly sections: ResultSection[],
-  ) {
+  private readonly title: string;
+  private readonly sections: ResultSection[];
+
+  constructor(app: App, title: string, sections: ResultSection[]) {
     super(app);
+    this.title = title;
+    this.sections = sections;
   }
 
-  onOpen(): void {
+  override onOpen(): void {
     const { contentEl } = this;
     contentEl.addClass('svo-result');
     contentEl.createEl('h3', { text: this.title });
@@ -34,7 +35,7 @@ export class ResultModal extends Modal {
     }
   }
 
-  onClose(): void {
+  override onClose(): void {
     this.contentEl.empty();
   }
 }

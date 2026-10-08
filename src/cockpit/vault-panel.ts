@@ -1,20 +1,7 @@
 import { Notice, TFile, TFolder, setIcon } from 'obsidian';
-import { runTool, runToolJson } from '../exec';
-import { CockpitContext, CockpitPanel } from './panel';
-
-interface ReviewDoc {
-  doc_id: string;
-  title: string;
-  obsidian_path: string;
-  age_days: number;
-}
-
-interface Brief {
-  ok: boolean;
-  vault_doc_count?: number;
-  docs_to_review?: { count: number; docs: ReviewDoc[] };
-  inbox?: { count: number };
-}
+import { runTool, runToolJson } from '../exec.ts';
+import { isBrief } from '../mcp-shapes.ts';
+import type { CockpitContext, CockpitPanel } from './panel.ts';
 
 // Vault health + inbox triage. Health from `severino-vault-mcp brief` (docs to
 // review, doc count); triage lists 00 Inbox/ captures with one-action
@@ -25,7 +12,7 @@ export class VaultPanel implements CockpitPanel {
   title = 'Vault';
 
   async render(body: HTMLElement, ctx: CockpitContext): Promise<void> {
-    const r = await runToolJson<Brief>('severino-vault-mcp', ['brief', '--days', '7'], { cwd: ctx.vaultPath });
+    const r = await runToolJson('severino-vault-mcp', ['brief', '--days', '7'], isBrief, { cwd: ctx.vaultPath });
     const brief = r.data;
     if (!brief?.ok) {
       body.createDiv({ cls: 'svo-cockpit-empty', text: 'Could not load the vault brief.' });

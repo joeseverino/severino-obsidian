@@ -18,7 +18,7 @@ in the vault. This is the checklist `cordon-starter` exists to satisfy.
 - [ ] The committed `contract/*.json` golden matches the live `--describe`
       (drift checked by `scripts/check.sh`).
 - [ ] The README's command reference is *rendered* from `contract/*.json` by
-      `scripts/gen-readme.mjs`, never hand-kept; `scripts/check.sh` runs
+      `scripts/gen-readme.ts`, never hand-kept; `scripts/check.sh` runs
       `--check` so a drifted block fails CI.
 
 ## Git workflow

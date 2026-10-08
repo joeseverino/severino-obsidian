@@ -1,24 +1,25 @@
 import { setIcon } from 'obsidian';
-import { runToolJson } from '../exec';
-import { CockpitContext, CockpitPanel } from './panel';
+import { runToolJson } from '../exec.ts';
+import { arrayOf, isBoolean, isNumber, isString, shape } from '../guards.ts';
+import type { CockpitContext, CockpitPanel } from './panel.ts';
 
-interface Task {
-  slug: string;
-  title: string;
-  project: string;
-  relative_path: string;
-  stale: boolean;
-  age_days: number;
-}
+const isTask = shape({
+  slug: isString,
+  title: isString,
+  project: isString,
+  relative_path: isString,
+  stale: isBoolean,
+  age_days: isNumber,
+});
 
-interface Board {
-  ok: boolean;
-  count: number;
-  counts: { stale: number };
-  tasks: Task[];
-  shipped: Task[];
-  shipped_days: number;
-}
+const isBoard = shape({
+  ok: isBoolean,
+  count: isNumber,
+  counts: shape({ stale: isNumber }),
+  tasks: arrayOf(isTask),
+  shipped: arrayOf(isTask),
+  shipped_days: isNumber,
+});
 
 // The backlog, scoped to context. In a project it shows that project's open work
 // + what it shipped; the Project/All toggle flips to the whole fleet. Thin over
@@ -52,7 +53,7 @@ export class BacklogPanel implements CockpitPanel {
     };
 
     const args = scope ? ['task-list', '--project', scope] : ['task-list'];
-    const board = (await runToolJson<Board>('severino-vault-mcp', args, { cwd: ctx.vaultPath })).data;
+    const board = (await runToolJson('severino-vault-mcp', args, isBoard, { cwd: ctx.vaultPath })).data;
     if (!board?.ok) {
       body.createDiv({ cls: 'svo-cockpit-empty', text: 'Could not load the backlog.' });
       return;
@@ -115,6 +116,6 @@ export class BacklogPanel implements CockpitPanel {
   private activeProject(ctx: CockpitContext): string | null {
     const path = ctx.app.workspace.getActiveFile()?.path ?? '';
     const m = /^01 Projects\/([^/]+)\//.exec(path);
-    return m ? m[1] : null;
+    return m?.[1] ?? null;
   }
 }

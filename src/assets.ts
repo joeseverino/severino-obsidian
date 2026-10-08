@@ -1,4 +1,4 @@
-import { App, TFile, TFolder } from 'obsidian';
+import { TFile, TFolder, type Vault } from 'obsidian';
 
 // Asset Doctor enforces the vault's "images/ is orphan-free" rule for a writeup:
 // every file in images/ should be referenced, and every reference should resolve.
@@ -18,7 +18,8 @@ export interface AssetReport {
 // directives and captions don't change the src, so a path scan is sufficient.
 function referencedImages(markdown: string): string[] {
   const refs = new Set<string>();
-  const add = (raw: string): void => {
+  const add = (raw: string | undefined): void => {
+    if (raw === undefined) return;
     const clean = raw.trim().replace(/^\.?\//, '');
     if (clean.startsWith(`${IMG_DIR}/`)) refs.add(clean);
   };
@@ -30,7 +31,11 @@ function referencedImages(markdown: string): string[] {
   return [...refs];
 }
 
-export function assetReport(app: App, file: TFile, markdown: string): AssetReport {
+export function assetReport(
+  app: { vault: Pick<Vault, 'getAbstractFileByPath'> },
+  file: TFile,
+  markdown: string,
+): AssetReport {
   const folder = file.parent?.path ?? '';
   const dir = app.vault.getAbstractFileByPath(`${folder}/${IMG_DIR}`);
   const present =

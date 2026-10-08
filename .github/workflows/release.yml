@@ -6,7 +6,7 @@
 # bumps. manifest.json + versions.json (what Obsidian reads at runtime) are
 # DERIVED from it by `npm run version:sync` and guarded by the `version-check`
 # gate, so the release PR stays red until the synced manifest is committed onto
-# it — a mismatched manifest can never ship. See scripts/sync-version.mjs.
+# it — a mismatched manifest can never ship. See scripts/sync-version.ts.
 #
 # ONE-TIME per-repo setting (required): Settings → Actions → General → Workflow
 # permissions → "Allow GitHub Actions to create and approve pull requests".

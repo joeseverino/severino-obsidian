@@ -19,12 +19,33 @@ import process from 'node:process';
 import { createRequire } from 'node:module';
 import { spawnSync } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
-import { repoRoot, siteDir, vaultDir, sitePaths, siteLoader, assertSitePaths } from './site-paths.mjs';
+import { parseArgs } from 'node:util';
+import type * as Render from '../src/render.ts';
+import { isSiteRender } from '../src/render.ts';
+import { isRecord } from '../src/guards.ts';
+import { repoRoot, siteDir, vaultDir, sitePaths, siteLoader, assertSitePaths } from './site-paths.ts';
 
-const args = process.argv.slice(2);
-const slug = args.find((a) => !a.startsWith('--'));
-const outArg = args.includes('--out') ? args[args.indexOf('--out') + 1] : null;
-const dumpHtml = args.includes('--html');
+const { values, positionals } = parseArgs({
+  allowPositionals: true,
+  options: {
+    out: { type: 'string' },
+    html: { type: 'boolean', default: false },
+  },
+});
+const slug = positionals[0];
+const outArg = values.out;
+const dumpHtml = values.html;
+
+interface Chromium {
+  launch(): Promise<{
+    newPage(options: { viewport: { width: number; height: number }; deviceScaleFactor: number }): Promise<{
+      setContent(html: string, options: { waitUntil: 'networkidle' }): Promise<void>;
+      screenshot(options: { path: string; fullPage: boolean }): Promise<unknown>;
+    }>;
+    close(): Promise<void>;
+  }>;
+}
+const isChromium = (value: unknown): value is Chromium => isRecord(value) && typeof value.launch === 'function';
 
 if (!slug) {
   console.error('usage: npm run preview:render <slug> [-- --out file.png] [--html]');
@@ -52,33 +73,34 @@ await esbuild.build({
   bundle: true,
   format: 'esm',
   platform: 'node',
-  target: 'es2021',
+  target: 'node24',
   alias: sitePaths,
   loader: siteLoader,
   logLevel: 'warning',
   outfile: tmpOut,
 });
 
-const { buildPreviewDoc } = await import(pathToFileURL(tmpOut).href);
+const { buildPreviewDoc }: typeof Render = await import(pathToFileURL(tmpOut).href);
 
 const raw = fs.readFileSync(indexMd, 'utf8');
 
 // Point site asset URLs back at the local writeup folder (file:// so Chromium loads them).
-const resolveAsset = (rel) => {
+const resolveAsset = (rel: string): string | null => {
   const p = path.join(writeupDir, rel.replace(/^\.?\//, ''));
   return fs.existsSync(p) ? pathToFileURL(p).href : null;
 };
 
 // The page comes from the site checkout's own `site render --document`, as in the plugin.
-const renderDocument = async (markdown) => {
+const renderDocument = async (markdown: string): Promise<string> => {
   const run = spawnSync(process.execPath, [path.join(siteDir, 'bin/site.ts'), 'render', '-', '--document', '--json'], {
     input: markdown,
     encoding: 'utf8',
     env: { ...process.env, VAULT_DIR: vaultDir },
     maxBuffer: 16 * 1024 * 1024,
   });
-  const doc = JSON.parse(run.stdout || '{}');
-  if (!doc.ok) throw new Error(doc.error?.message ?? (run.stderr || 'site render failed'));
+  const doc: unknown = JSON.parse(run.stdout || '{}');
+  if (!isSiteRender(doc)) throw new Error(run.stderr || 'site render failed');
+  if (!doc.ok || typeof doc.document !== 'string') throw new Error(doc.error?.message ?? (run.stderr || 'site render failed'));
   return doc.document;
 };
 
@@ -93,9 +115,11 @@ if (dumpHtml) {
 }
 
 // Borrow Chromium from the site's Playwright install.
-let chromium;
+let chromium: Chromium;
 try {
-  chromium = createRequire(path.join(siteDir, 'package.json'))('playwright').chromium;
+  const playwright: unknown = createRequire(path.join(siteDir, 'package.json'))('playwright');
+  if (!isRecord(playwright) || !isChromium(playwright.chromium)) throw new Error('playwright has no chromium');
+  chromium = playwright.chromium;
 } catch {
   console.error(`✗ Could not load Playwright from ${siteDir}. Run \`npm i\` there (or \`npx playwright install chromium\`).`);
   process.exit(1);

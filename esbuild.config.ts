@@ -1,15 +1,17 @@
 // Bundle the plugin into the vault's plugin dir. The aliases below import the
 // brand mark and helpers straight from their owners; the writeup preview,
 // markup and styles, comes from `site render --document`. The site/vault
-// resolution + alias map live in scripts/site-paths.mjs (shared with the
+// resolution + alias map live in scripts/site-paths.ts (shared with the
 // preview-render harness), so they're authored once.
 import esbuild from 'esbuild';
+import { builtinModules } from 'node:module';
 import path from 'node:path';
 import fs from 'node:fs';
-import process from 'node:process';
-import { repoRoot, vaultDir, sitePaths, siteLoader, assertSitePaths } from './scripts/site-paths.mjs';
+import { parseArgs } from 'node:util';
+import { repoRoot, vaultDir, sitePaths, siteLoader, assertSitePaths } from './scripts/site-paths.ts';
 
-const watch = process.argv.includes('--watch');
+const { values } = parseArgs({ options: { watch: { type: 'boolean', default: false } } });
+const watch = values.watch;
 
 assertSitePaths();
 
@@ -17,7 +19,7 @@ const outDir = path.join(vaultDir, '.obsidian/plugins/severino-obsidian');
 fs.mkdirSync(outDir, { recursive: true });
 
 // Static assets that ship beside main.js.
-function copyStatics() {
+function copyStatics(): void {
   for (const name of ['manifest.json', 'styles.css', 'versions.json']) {
     fs.copyFileSync(path.join(repoRoot, name), path.join(outDir, name));
   }
@@ -25,11 +27,11 @@ function copyStatics() {
 
 const banner = `/* severino-obsidian — generated bundle. Source: Projects/severino-obsidian. Do not edit here. */`;
 
-const options = {
+const options: esbuild.BuildOptions = {
   entryPoints: [path.join(repoRoot, 'src/main.ts')],
   bundle: true,
   format: 'cjs',
-  target: 'es2021',
+  target: 'es2022',
   platform: 'browser',
   logLevel: 'info',
   sourcemap: watch ? 'inline' : false,
@@ -43,11 +45,8 @@ const options = {
     'electron',
     // Node builtins — available in Obsidian's Electron runtime (isDesktopOnly);
     // used to invoke the site/MCP CLIs so the plugin consumes their code path.
-    'child_process',
-    'util',
-    'fs',
-    'path',
-    'os',
+    'node:*',
+    ...builtinModules,
     '@codemirror/autocomplete',
     '@codemirror/collab',
     '@codemirror/commands',

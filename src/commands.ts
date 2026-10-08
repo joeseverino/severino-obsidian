@@ -1,7 +1,8 @@
 // E — the plugin's Obsidian command surface, defined ONCE. This single source
 // drives both the live command registrations (src/main.ts) and the cordon-v4
-// contract (bin/emit-obsidian-commands.mjs → contract/obsidian-commands.json).
-// Plain .mjs so the Node emitter and the bundled plugin import the same array.
+// contract (bin/emit-obsidian-commands.ts → contract/obsidian-commands.json).
+// Plain TypeScript with no runtime imports, so the Node emitter (type
+// stripping) and the bundled plugin import the same array.
 //
 // Each command carries a cordon `effect` (read < local_write < vault_write <
 // remote_write < deploy) — the same blast-radius signal the rest of the fleet
@@ -9,7 +10,20 @@
 //
 // type: "callback" (no editor needed) | "editor" (acts on the active editor).
 
-export const OBSIDIAN_COMMANDS = [
+export const EFFECTS = ['read', 'local_write', 'vault_write', 'remote_write', 'deploy'] as const;
+export type CommandEffect = (typeof EFFECTS)[number];
+
+export interface ObsidianCommandSpec {
+  id: string;
+  name: string;
+  effect: CommandEffect;
+  group: string;
+  type: 'callback' | 'editor';
+  summary: string;
+  delegate?: string;
+}
+
+export const OBSIDIAN_COMMANDS: readonly ObsidianCommandSpec[] = [
   { id: 'open-site-preview', name: 'Site preview: open pane', effect: 'read', group: 'Preview', type: 'callback', summary: 'Open the site-accurate writeup preview pane.' },
   { id: 'publish-gate', name: 'Publish gate: check this writeup', effect: 'read', group: 'Writeup', type: 'callback', summary: 'Run the site publish gate (draft mode).', delegate: 'site validate --draft' },
   { id: 'asset-doctor', name: 'Asset doctor: check images for orphans + missing', effect: 'read', group: 'Writeup', type: 'callback', summary: 'Report orphaned and missing writeup images.' },

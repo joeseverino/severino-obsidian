@@ -10,6 +10,22 @@
       "fix": "Run `npm run typecheck` and fix the TypeScript errors."
     },
     {
+      "id": "test",
+      "name": "Unit tests",
+      "effect": "read",
+      "requires": ["node"],
+      "exec": { "cmd": "npm", "args": ["test"] },
+      "fix": "Run `npm test` and fix the failing tests."
+    },
+    {
+      "id": "readme-sync-ts",
+      "name": "README CLI reference in sync",
+      "effect": "read",
+      "requires": ["node"],
+      "exec": { "cmd": "node", "args": ["scripts/gen-readme.ts", "--check"] },
+      "fix": "Run `node scripts/gen-readme.ts` to regenerate the README reference block."
+    },
+    {
       "id": "commands-check",
       "name": "Obsidian command contract drift",
       "effect": "read",

@@ -7,10 +7,8 @@
 //   bin/severino-obsidian --write       (re)write contract/severino-obsidian.json
 //   bin/severino-obsidian --check       exit 1 if the committed contract is stale
 
-import { readFile } from 'node:fs/promises';
 import { describeScripts, emitMain } from 'cordon-spec/emit';
-
-const pkg = JSON.parse(await readFile(new URL('../package.json', import.meta.url)));
+import pkg from '../package.json' with { type: 'json' };
 
 const spec = describeScripts(pkg, {
   name: 'severino-obsidian',
@@ -23,6 +21,7 @@ const spec = describeScripts(pkg, {
     build: 'local_write',
     dev: 'local_write',
     typecheck: 'read',
+    test: 'read',
     'commands:emit': 'local_write',
     'commands:check': 'read',
   },
@@ -30,7 +29,8 @@ const spec = describeScripts(pkg, {
     build: 'Bundle the plugin into the vault (the brand mark inlined; the preview comes from site render).',
     dev: 'Watch-rebuild into the vault on change.',
     typecheck: 'Type-check the source with tsc --noEmit.',
-    'commands:emit': 'Render the cordon-v4 command contract from src/commands.mjs.',
+    test: 'Run the unit tests with node --test.',
+    'commands:emit': 'Render the cordon-v4 command contract from src/commands.ts.',
     'commands:check': 'Fail if the committed command contract is stale.',
   },
 });

@@ -1,9 +1,6 @@
 import { App, Modal, Setting, Notice } from 'obsidian';
 
-export interface ProjectOption {
-  slug: string;
-  open: number;
-}
+import type { ProjectOption } from './mcp-shapes.ts';
 
 export interface NewTaskInput {
   title: string;
@@ -25,20 +22,26 @@ export class NewTaskModal extends Modal {
   private effort = 'S';
   private priority = 'med';
   private submitted = false;
+  private readonly projects: ProjectOption[];
+  private readonly onSubmit: (input: NewTaskInput) => void | Promise<void>;
+  private readonly opts: { defaultTitle?: string; heading?: string };
 
   constructor(
     app: App,
-    private readonly projects: ProjectOption[],
+    projects: ProjectOption[],
     defaultProject: string | null,
-    private readonly onSubmit: (input: NewTaskInput) => void | Promise<void>,
-    private readonly opts: { defaultTitle?: string; heading?: string } = {},
+    onSubmit: (input: NewTaskInput) => void | Promise<void>,
+    opts: { defaultTitle?: string; heading?: string } = {},
   ) {
     super(app);
+    this.projects = projects;
+    this.onSubmit = onSubmit;
+    this.opts = opts;
     this.project = defaultProject;
     this.title = opts.defaultTitle ?? '';
   }
 
-  onOpen(): void {
+  override onOpen(): void {
     const { contentEl } = this;
     contentEl.addClass('svo-new-task');
     contentEl.createEl('h3', { text: this.opts.heading ?? 'New task' });
@@ -96,7 +99,7 @@ export class NewTaskModal extends Modal {
     await this.onSubmit({ title, project: this.project, effort: this.effort, priority: this.priority });
   }
 
-  onClose(): void {
+  override onClose(): void {
     this.contentEl.empty();
   }
 }

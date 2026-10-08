@@ -1,4 +1,5 @@
-import { runTool, runToolJson, ToolResult } from './exec';
+import { runTool, runToolJson, type ToolResult } from './exec.ts';
+import { arrayOf, isBoolean, isString, optional, shape } from './guards.ts';
 
 // Bridges to the rest of the system by invoking the same CLIs the `site` TUI and
 // AI sessions use. The plugin is a third face of one code path — it never
@@ -17,11 +18,11 @@ export interface GateReport {
   error?: string;
 }
 
-interface RawValidate {
-  ok?: boolean;
-  documents?: { slug: string; issues: string[] }[];
-  error?: { message?: string };
-}
+const isRawValidate = shape({
+  ok: optional(isBoolean),
+  documents: optional(arrayOf(shape({ slug: isString, issues: arrayOf(isString) }))),
+  error: optional(shape({ message: optional(isString) })),
+});
 
 const emptyGate = (error: string): GateReport => ({
   ok: false,
@@ -43,7 +44,7 @@ export async function syncToSite(vaultRoot: string): Promise<ToolResult> {
 export async function gateWriteup(slug: string, vaultRoot: string, draft = true): Promise<GateReport> {
   const args = ['validate', slug, '--json'];
   if (draft) args.push('--draft');
-  const res = await runToolJson<RawValidate>('site', args, { cwd: vaultRoot, env: { VAULT_DIR: vaultRoot } });
+  const res = await runToolJson('site', args, isRawValidate, { cwd: vaultRoot, env: { VAULT_DIR: vaultRoot } });
   if (!res.ok || !res.data) return emptyGate(res.error ?? 'gate failed to run');
   const d = res.data;
   const blockers = (d.documents ?? []).flatMap((doc) => doc.issues);

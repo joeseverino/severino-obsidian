@@ -3,7 +3,8 @@
 // inlined. The plugin owns none of the markup or styling; it only points the
 // document's vault-relative asset paths at local files.
 //
-import { runToolJson } from './exec';
+import { runToolJson } from './exec.ts';
+import { isBoolean, isString, optional, shape } from './guards.ts';
 
 export interface RenderInput {
   markdown: string;
@@ -15,15 +16,15 @@ export interface RenderInput {
   vaultRoot?: string;
 }
 
-interface SiteRender {
-  ok?: boolean;
-  document?: string;
-  error?: { message?: string };
-}
+export const isSiteRender = shape({
+  ok: optional(isBoolean),
+  document: optional(isString),
+  error: optional(shape({ message: optional(isString) })),
+});
 
 export function siteRenderDocument(vaultRoot: string): (markdown: string) => Promise<string> {
   return async (markdown) => {
-    const res = await runToolJson<SiteRender>('site', ['render', '-', '--document', '--json'], {
+    const res = await runToolJson('site', ['render', '-', '--document', '--json'], isSiteRender, {
       cwd: vaultRoot,
       env: { VAULT_DIR: vaultRoot },
       input: markdown,

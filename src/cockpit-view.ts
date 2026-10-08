@@ -1,11 +1,12 @@
 import { ItemView, WorkspaceLeaf, TFile, FileSystemAdapter, debounce, setIcon } from 'obsidian';
-import { CockpitPanel, CockpitContext } from './cockpit/panel';
-import { BacklogPanel } from './cockpit/backlog-panel';
-import { ProjectsPanel } from './cockpit/projects-panel';
-import { WriteupsPanel } from './cockpit/writeups-panel';
-import { VaultPanel } from './cockpit/vault-panel';
-import { projectPathOf, renderLaunchButtons } from './cockpit/util';
-import { runToolJson } from './exec';
+import type { CockpitPanel, CockpitContext } from './cockpit/panel.ts';
+import { BacklogPanel } from './cockpit/backlog-panel.ts';
+import { ProjectsPanel } from './cockpit/projects-panel.ts';
+import { WriteupsPanel } from './cockpit/writeups-panel.ts';
+import { VaultPanel } from './cockpit/vault-panel.ts';
+import { projectPathOf, renderLaunchButtons } from './cockpit/util.ts';
+import { runToolJson } from './exec.ts';
+import { isNumber, optional, shape } from './guards.ts';
 import brandMark from '@site/brand-mark';
 
 export const COCKPIT_VIEW_TYPE = 'severino-cockpit';
@@ -23,7 +24,7 @@ export interface CockpitActions {
 // the active file (a writeup → open preview; a project → launch). Panels derive
 // their data from the MCP; the shell owns only the chrome + the open/preview
 // seams.
-const PANELS: CockpitPanel[] = [new BacklogPanel(), new ProjectsPanel(), new WriteupsPanel(), new VaultPanel()];
+const PANELS: [CockpitPanel, ...CockpitPanel[]] = [new BacklogPanel(), new ProjectsPanel(), new WriteupsPanel(), new VaultPanel()];
 
 export class CockpitView extends ItemView {
   private activeId = PANELS[0].id;
@@ -31,24 +32,24 @@ export class CockpitView extends ItemView {
   private tabBarEl: HTMLElement | null = null;
   private bodyEl: HTMLElement | null = null;
 
-  constructor(
-    leaf: WorkspaceLeaf,
-    private readonly actions: CockpitActions,
-  ) {
+  private readonly actions: CockpitActions;
+
+  constructor(leaf: WorkspaceLeaf, actions: CockpitActions) {
     super(leaf);
+    this.actions = actions;
   }
 
-  getViewType(): string {
+  override getViewType(): string {
     return COCKPIT_VIEW_TYPE;
   }
-  getDisplayText(): string {
+  override getDisplayText(): string {
     return 'Severino cockpit';
   }
-  getIcon(): string {
+  override getIcon(): string {
     return 'layout-dashboard';
   }
 
-  async onOpen(): Promise<void> {
+  override async onOpen(): Promise<void> {
     this.buildChrome();
     // Auto-refresh: re-pull the active panel when the vault changes (debounced),
     // and re-read context on file switches.
@@ -79,7 +80,7 @@ export class CockpitView extends ItemView {
   // Properties edit that didn't move through the MCP). Re-renders only if it
   // actually moved something. Run on open + Refresh — not on every keystroke.
   private async tidy(): Promise<void> {
-    const r = await runToolJson<{ moved: number }>('severino-vault-mcp', ['task-reconcile'], {
+    const r = await runToolJson('severino-vault-mcp', ['task-reconcile'], shape({ moved: optional(isNumber) }), {
       cwd: this.vaultPath(),
     });
     if ((r.data?.moved ?? 0) > 0) void this.renderActive();
@@ -144,7 +145,7 @@ export class CockpitView extends ItemView {
   private selectTab(id: string): void {
     this.activeId = id;
     for (const tab of Array.from(this.tabBarEl?.children ?? [])) {
-      (tab as HTMLElement).toggleClass('is-active', (tab as HTMLElement).dataset.id === id);
+      if (tab.instanceOf(HTMLElement)) tab.toggleClass('is-active', tab.dataset.id === id);
     }
     void this.renderActive();
   }
@@ -169,7 +170,7 @@ export class CockpitView extends ItemView {
   private currentProject(): string | null {
     const path = this.app.workspace.getActiveFile()?.path ?? '';
     const m = /^01 Projects\/([^/]+)\//.exec(path);
-    return m ? m[1] : null;
+    return m?.[1] ?? null;
   }
 
   // The context bar reflects the active file: a writeup gets an Open-preview
@@ -180,21 +181,21 @@ export class CockpitView extends ItemView {
     el.empty();
     const path = this.app.workspace.getActiveFile()?.path ?? '';
 
-    const writeup = /^05 Writeups\/([^/]+)\//.exec(path);
-    if (writeup) {
+    const writeupSlug = /^05 Writeups\/([^/]+)\//.exec(path)?.[1];
+    if (writeupSlug) {
       el.removeClass('is-empty');
-      el.createSpan({ cls: 'svo-cockpit-context-label', text: writeup[1] });
+      el.createSpan({ cls: 'svo-cockpit-context-label', text: writeupSlug });
       const btn = el.createEl('button', { cls: 'svo-cockpit-context-btn', text: 'Open preview' });
       btn.onclick = () => void this.actions.openPreview();
       return;
     }
 
-    const project = /^01 Projects\/([^/]+)\//.exec(path);
-    if (project) {
-      const repoPath = projectPathOf(this.app, project[1]);
+    const projectSlug = /^01 Projects\/([^/]+)\//.exec(path)?.[1];
+    if (projectSlug) {
+      const repoPath = projectPathOf(this.app, projectSlug);
       if (repoPath) {
         el.removeClass('is-empty');
-        el.createSpan({ cls: 'svo-cockpit-context-label', text: project[1] });
+        el.createSpan({ cls: 'svo-cockpit-context-label', text: projectSlug });
         renderLaunchButtons(el, repoPath);
         return;
       }

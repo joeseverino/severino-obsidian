@@ -1,4 +1,4 @@
-import { Editor } from 'obsidian';
+import type { Editor } from 'obsidian';
 
 // Skeletons for the site's blocks (jseverino.com/src/lib/markdown/, standard
 // directive syntax). The site owns what these blocks mean; this just types the
@@ -28,7 +28,11 @@ const terminal: Skeleton = (sel) =>
 export const SKELETONS = { figure, table, terminal } as const;
 export type BlockKind = keyof typeof SKELETONS;
 
-export function insertBlock(editor: Editor, kind: BlockKind): void {
+export const isBlockKind = (value: string): value is BlockKind => Object.hasOwn(SKELETONS, value);
+
+export type BlockEditor = Pick<Editor, 'getSelection' | 'replaceSelection' | 'getCursor' | 'replaceRange'>;
+
+export function insertBlock(editor: BlockEditor, kind: BlockKind): void {
   const sel = editor.getSelection();
   const text = SKELETONS[kind](sel);
   if (sel) {

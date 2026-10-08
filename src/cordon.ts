@@ -1,4 +1,5 @@
-import { runToolJson } from './exec';
+import { runToolJson } from './exec.ts';
+import { isRecord, isUnknown } from './guards.ts';
 
 // D — lightweight cordon effect awareness. The plugin derives each action's
 // blast radius from the SAME cordon contract the AI agent reads
@@ -8,6 +9,8 @@ import { runToolJson } from './exec';
 // the blast radius before acting — the same signal, third face.
 
 export type Effect = 'read' | 'local_write' | 'vault_write' | 'remote_write' | 'deploy' | 'unknown';
+
+const isEffect = (value: string | undefined): value is Effect => value !== undefined && Object.hasOwn(RANK, value);
 
 const RANK: Record<Effect, number> = {
   read: 0,
@@ -22,6 +25,12 @@ const CONFIRM_AT = RANK.remote_write;
 
 let cache: Map<string, string> | null = null;
 
+export function collectEffects(contract: unknown): Map<string, string> {
+  const map = new Map<string, string>();
+  collect(contract, '', map);
+  return map;
+}
+
 // Walk the federated contract collecting every {name, effect} pair, keyed by
 // both the bare command name and "<tool> <command>", so lookups are robust to
 // the exact nesting (tools[].commands[], siblings, …).
@@ -30,8 +39,8 @@ function collect(node: unknown, parent: string, map: Map<string, string>): void 
     for (const child of node) collect(child, parent, map);
     return;
   }
-  if (!node || typeof node !== 'object') return;
-  const obj = node as Record<string, unknown>;
+  if (!isRecord(node)) return;
+  const obj = node;
   const name = typeof obj.name === 'string' ? obj.name : undefined;
   const effect = typeof obj.effect === 'string' ? obj.effect : undefined;
   if (name && effect) {
@@ -47,9 +56,9 @@ function collect(node: unknown, parent: string, map: Map<string, string>): void 
 
 async function loadEffects(vaultRoot: string): Promise<Map<string, string>> {
   if (cache) return cache;
-  const map = new Map<string, string>();
-  const res = await runToolJson('tools', ['describe', '--repos'], { cwd: vaultRoot });
-  if (res.ok && res.data) collect(res.data, '', map);
+  let map = new Map<string, string>();
+  const res = await runToolJson('tools', ['describe', '--repos'], isUnknown, { cwd: vaultRoot });
+  if (res.ok && res.data) map = collectEffects(res.data);
   cache = map;
   return map;
 }
@@ -57,7 +66,7 @@ async function loadEffects(vaultRoot: string): Promise<Map<string, string>> {
 export async function effectFor(tool: string, command: string, vaultRoot: string): Promise<Effect> {
   const map = await loadEffects(vaultRoot);
   const found = map.get(`${tool} ${command}`) ?? map.get(command) ?? map.get(tool);
-  return (found as Effect | undefined) ?? 'unknown';
+  return isEffect(found) ? found : 'unknown';
 }
 
 export function needsConfirm(effect: Effect): boolean {
