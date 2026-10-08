@@ -8,6 +8,20 @@ Two axes, kept distinct:
   (currently `4`, schema `cordon-v4.json`). Tracked separately because a project
   can stay on the starter while the contract revs.
 
+## [1.1.0](https://github.com/joeseverino/severino-obsidian/compare/v1.0.0...v1.1.0) (2026-10-08)
+
+
+### Features
+
+* **dsl:** insert the site's directive syntax (:::figure, :::table, terminal fence) ([#11](https://github.com/joeseverino/severino-obsidian/issues/11)) ([8fcbc85](https://github.com/joeseverino/severino-obsidian/commit/8fcbc851aa02061ec07ac3a24612db966eea206d))
+* self-filling daily note — populate brief region on open ([#8](https://github.com/joeseverino/severino-obsidian/issues/8)) ([e0812b4](https://github.com/joeseverino/severino-obsidian/commit/e0812b4563ca01bbc4df95e8591180bf34511332))
+
+
+### Bug Fixes
+
+* preview is the styled page site render returns ([#14](https://github.com/joeseverino/severino-obsidian/issues/14)) ([7524ee7](https://github.com/joeseverino/severino-obsidian/commit/7524ee7b46ff0d137ffc8e1c01909b6a8563a5b6))
+* publish gate runs site validate ([#13](https://github.com/joeseverino/severino-obsidian/issues/13)) ([7139b3c](https://github.com/joeseverino/severino-obsidian/commit/7139b3c1505332ecc936a73a77c1abf68ecc23b7))
+
 ## 1.0.0 (2026-06-24)
 
 
